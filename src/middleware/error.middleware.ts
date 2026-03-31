@@ -1,16 +1,15 @@
-import type { Request, Response, NextFunction } from "express";
+import type { Request, Response } from "express";
 import type { CustomError } from "../lib/type";
 
 export const errorMiddleware = (
   err: CustomError,
   _req: Request,
   res: Response,
-  _next: NextFunction
 ) => {
   const statusCode = err.statusCode || 500;
   res.status(statusCode).json({
-      statusCode,
-      message: err.message || "Something went wrong",
-      details: err.details ?? undefined,
-    });
+    statusCode,
+    message: err.message || "Something went wrong",
+    details: err.details ?? undefined,
+  });
 };

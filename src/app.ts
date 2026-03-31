@@ -14,7 +14,6 @@ app.get("/health", (_req, res) => {
   res.json({ status: "OK" });
 });
 
-
 app.use((r_req, res) => {
   res.status(404).json({
     status: 404,
