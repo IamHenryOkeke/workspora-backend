@@ -1,5 +1,5 @@
 import type { Request, Response } from "express";
-import type { CustomError } from "../lib/type";
+import type { CustomError } from "../lib/types";
 
 export const errorMiddleware = (
   err: CustomError,
