@@ -13,14 +13,29 @@ datasource db {
 }
 
 model User {
-  id          String    @id @default(cuid())
-  email       String    @unique
+  id          String   @id @default(cuid())
+  email       String   @unique
   password    String?
-  googleId    String?   @unique
-  fullName    String    @db.VarChar(255)
+  googleId    String?  @unique
+  fullName    String   @db.VarChar(255)
   avatar      String?
   phoneNumber String?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
   // deletedAt   DateTime?
+  tokens      Token[]
+}
+
+enum TokenType {
+  PASSWORD_RESET
+  EMAIL_VERIFICATION
+}
+
+model Token {
+  id      String    @id @default(cuid())
+  userId  String
+  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token   String    @unique @default(cuid())
+  type    TokenType
+  expires DateTime
 }

@@ -1,23 +1,88 @@
-import bcrypt from "bcrypt";
+import { getEnv } from "../../config/env";
+import { AppError } from "../../error/error-handler";
+import { TokenType } from "../../generated/prisma/enums";
 import { AuthRepository } from "./auth.repository";
+import * as argon2 from "argon2";
+import crypto from "crypto";
+import { emailQueue } from "../../queues/email.queue";
+import { queueConfig } from "../../utils/queue-config";
+
+const FRONTEND_URL = getEnv("FRONTEND_URL");
 
 export class AuthService {
   constructor(private authRepo: AuthRepository) {}
 
-  async signUp(data: { email: string; password: string; fullName: string }) {
-    const { email, password, fullName } = data;
-    const existingUser = await this.authRepo.getUserByEmail(email);
+  private async hashPassword(password: string) {
+    const result = await argon2.hash(password);
+    return result;
+  }
 
-    if (existingUser) {
-      throw new Error("User already exists");
-    }
+  private async comparePassword(hashedPassword: string, password: string) {
+    const result = await argon2.verify(hashedPassword, password);
+    return result;
+  }
 
-    const hashedPassword = await bcrypt.hash(password, 10);
+  private createToken() {
+    return crypto.randomBytes(32).toString("hex");
+  }
 
-    return this.authRepo.createUser({
-      fullName,
-      email,
+  async register(data: { email: string; password: string; fullName: string }) {
+    const normalizedEmail = data.email.toLowerCase();
+
+    const existingUser = await this.authRepo.getUserByEmail(normalizedEmail);
+    if (existingUser)
+      throw new AppError("Email already used. Please use another email.", 409);
+
+    const hashedPassword = await this.hashPassword(data.password);
+
+    const values = {
+      email: normalizedEmail,
       password: hashedPassword,
+      fullName: data.fullName.trim(),
+    };
+
+    const newUser = await this.authRepo.createUser(values);
+
+    await this.authRepo.deleteToken(newUser.id);
+
+    const token = this.createToken();
+    await this.authRepo.createToken({
+      token,
+      expires: new Date(Date.now() + 60 * 10 * 1000),
+      user: {
+        connect: {
+          id: newUser.id,
+        },
+      },
+      type: TokenType.EMAIL_VERIFICATION,
     });
+
+    const verificationLink = `${FRONTEND_URL}/verify-account?token=${token}`;
+
+    await emailQueue.add(
+      "send-welcome-email",
+      {
+        title: "Welcome to AlphaBlocks!",
+        to: newUser.email,
+        name: newUser.fullName,
+        content: `
+          <div>
+            <p>Hello ${newUser.fullName || newUser.email},</p>
+            <p>Welcome to AlphaBlocks! We're excited to have you on board.</p>
+            <p>Please verify your email by clicking the following link: <a href="${verificationLink}">Verify Email</a></p>
+            <p>Link expires in 10 minutes</p>
+          </div>
+        `,
+      },
+      queueConfig,
+    );
+
+    const user = {
+      id: newUser.id,
+      fullName: newUser.fullName,
+      email: newUser.email,
+    };
+
+    return user;
   }
 }

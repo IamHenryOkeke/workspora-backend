@@ -1,4 +1,4 @@
-import { Prisma } from "../../generated/prisma/client";
+import { Prisma, TokenType } from "../../generated/prisma/client";
 import { prisma } from "../../lib/prisma";
 
 export class AuthRepository {
@@ -24,5 +24,29 @@ export class AuthRepository {
 
   async deleteUser(id: string) {
     return prisma.user.delete({ where: { id } });
+  }
+
+  async createToken(data: Prisma.TokenCreateInput) {
+    return prisma.token.create({ data });
+  }
+
+  async getToken(token: string, type: TokenType) {
+    return prisma.token.findFirst({
+      where: {
+        token,
+        expires: {
+          gt: new Date(),
+        },
+        type,
+      },
+    });
+  }
+
+  async deleteToken(userId: string) {
+    return prisma.token.deleteMany({
+      where: {
+        userId,
+      },
+    });
   }
 }
