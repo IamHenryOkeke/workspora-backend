@@ -20,4 +20,10 @@ export class AuthSchema {
         error: "Password must contain at least one special character",
       }),
   });
+
+  static verifyAccountQuerySchema = z.object({
+    token: z
+      .string()
+      .min(3, { error: "Token must be at least 3 characters long" }),
+  });
 }

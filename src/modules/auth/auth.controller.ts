@@ -17,15 +17,13 @@ export class AuthController {
     },
   );
 
-  // async login(req: Request, res: Response) {
-  //   try {
-  //     const { email, password } = req.body;
+  verifyAccount = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const { token } = req.query;
 
-  //     const user = await this.authService.login(email, password);
+      const result = await this.authService.verifyAccount(token as string);
 
-  //     res.json(user);
-  //   } catch (error: any) {
-  //     res.status(400).json({ message: error.message });
-  //   }
-  // }
+      res.status(200).json(result);
+    },
+  );
 }

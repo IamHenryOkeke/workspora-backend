@@ -19,10 +19,14 @@ authRouter.post(
   authController.register,
 );
 
-// authRouter.get(
-//   "/verify-account",
-//   validate(),
-// );
+authRouter.get(
+  "/verify-account",
+  validate({
+    query: AuthSchema.verifyAccountQuerySchema,
+  }),
+  authController.verifyAccount,
+);
+
 // authRouter.post(
 //   "/request-verification-link",
 //   validate({ body: sendVerificationLinkSchema }),

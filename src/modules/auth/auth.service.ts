@@ -85,4 +85,26 @@ export class AuthService {
 
     return user;
   }
+
+  async verifyAccount(token: string) {
+    const existingToken = await this.authRepo.getToken(
+      token,
+      TokenType.EMAIL_VERIFICATION,
+    );
+
+    if (!existingToken)
+      throw new AppError("Reset token is invalid or has expired.", 400);
+
+    const user = await this.authRepo.getUserById(existingToken.userId);
+
+    if (!user) throw new AppError("User not found", 404);
+
+    if (user.isVerified) return { message: "Account is already verified." };
+
+    const values = { isVerified: true };
+
+    await this.authRepo.updateUser(user.id, values);
+
+    return { message: "Account verification successful." };
+  }
 }
