@@ -1,9 +1,23 @@
 import { Router } from "express";
 import { validate } from "../middleware/validation.middleware";
+import { AuthSchema } from "../modules/auth/auth.schema";
+import { AuthRepository } from "../modules/auth/auth.repository";
+import { AuthService } from "../modules/auth/auth.service";
+import { AuthController } from "../modules/auth/auth.controller";
 
 const authRouter = Router();
 
-authRouter.post("/sign-up", validate());
+const authRepo = new AuthRepository();
+const authService = new AuthService(authRepo);
+const authController = new AuthController(authService);
+
+authRouter.post(
+  "/register",
+  validate({
+    body: AuthSchema.createUserSchema,
+  }),
+  authController.register,
+);
 
 // authRouter.get(
 //   "/verify-account",

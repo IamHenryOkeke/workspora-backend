@@ -9,15 +9,18 @@ type SchemaMap = {
 };
 
 export const validate =
-  (schemas: SchemaMap) => (req: Request, res: Response, next: NextFunction) => {
+  (schemas: SchemaMap) =>
+  (req: Request, _res: Response, next: NextFunction) => {
     if (schemas.body) {
       const result = schemas.body.safeParse(req.body);
-      if (!result.success)
+      if (result.error) {
+        console.log(z.flattenError(result.error).fieldErrors);
         throw new AppError(
           "Validation failed",
           400,
           z.flattenError(result.error).fieldErrors,
         );
+      }
       req.body = result.data;
     }
 

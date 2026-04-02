@@ -7,9 +7,7 @@ export class AuthController {
 
   register = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
-      const { email, password } = req.body;
-
-      const user = await this.authService.signUp(email, password);
+      const user = await this.authService.signUp(req.body);
 
       res.status(201).json({
         message:
