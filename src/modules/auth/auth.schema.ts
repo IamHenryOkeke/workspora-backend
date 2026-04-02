@@ -26,4 +26,9 @@ export class AuthSchema {
       .string()
       .min(3, { error: "Token must be at least 3 characters long" }),
   });
+
+  static loginUserSchema = z.object({
+    email: z.string({ error: "Email is required" }),
+    password: z.string({ error: "Password is required" }).min(6),
+  });
 }

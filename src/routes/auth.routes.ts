@@ -4,6 +4,7 @@ import { AuthSchema } from "../modules/auth/auth.schema";
 import { AuthRepository } from "../modules/auth/auth.repository";
 import { AuthService } from "../modules/auth/auth.service";
 import { AuthController } from "../modules/auth/auth.controller";
+import { rateLimiter } from "../middleware/rate-limiter.middleware";
 
 const authRouter = Router();
 
@@ -13,6 +14,7 @@ const authController = new AuthController(authService);
 
 authRouter.post(
   "/register",
+  rateLimiter(5),
   validate({
     body: AuthSchema.createUserSchema,
   }),
@@ -32,10 +34,12 @@ authRouter.get(
 //   validate({ body: sendVerificationLinkSchema }),
 // );
 
-// authRouter.post(
-//   "/login",
-//   validate({ body: loginUserSchema }),
-// );
+authRouter.post(
+  "/login",
+  rateLimiter(5),
+  validate({ body: AuthSchema.loginUserSchema }),
+  authController.logIn,
+);
 // authRouter.post(
 //   "/request-password-reset",
 //   validate({ body: sendVerificationLinkSchema }),

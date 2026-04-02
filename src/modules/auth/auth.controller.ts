@@ -26,4 +26,14 @@ export class AuthController {
       res.status(200).json(result);
     },
   );
+
+  logIn = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { user, token } = await this.authService.logIn(req.body);
+
+    res.status(201).json({
+      message: "Login successful",
+      user,
+      token,
+    });
+  });
 }

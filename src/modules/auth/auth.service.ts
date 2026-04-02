@@ -6,6 +6,7 @@ import * as argon2 from "argon2";
 import crypto from "crypto";
 import { emailQueue } from "../../queues/email.queue";
 import { queueConfig } from "../../utils/queue-config";
+import { signJWT } from "../../utils/jwt";
 
 const FRONTEND_URL = getEnv("FRONTEND_URL");
 
@@ -106,5 +107,78 @@ export class AuthService {
     await this.authRepo.updateUser(user.id, values);
 
     return { message: "Account verification successful." };
+  }
+
+  async logIn(data: { email: string; password: string }) {
+    const { email, password } = data;
+    const isExistingUser = await this.authRepo.getUserByEmail(
+      email.toLowerCase(),
+    );
+
+    if (!isExistingUser) throw new AppError("invalid credentials", 401);
+
+    if (!isExistingUser.password) {
+      if (isExistingUser.googleId)
+        throw new AppError("Please login with Google.", 400);
+
+      throw new AppError("Invalid credentials", 401);
+    }
+
+    if (!isExistingUser.isVerified) {
+      await this.authRepo.deleteToken(isExistingUser.id);
+
+      const token = this.createToken();
+
+      await this.authRepo.createToken({
+        token,
+        expires: new Date(Date.now() + 60 * 10 * 1000),
+        user: {
+          connect: {
+            id: isExistingUser.id,
+          },
+        },
+        type: TokenType.EMAIL_VERIFICATION,
+      });
+
+      const verificationLink = `${FRONTEND_URL}/verify-account?token=${token}`;
+
+      await emailQueue.add(
+        "send-verification-email",
+        {
+          title: "Verify Your account!",
+          to: isExistingUser.email,
+          name: isExistingUser.fullName,
+          content: `
+            <div>
+              <p>Hello ${isExistingUser.fullName || isExistingUser.email},</p>
+              <p>Please verify your email by clicking the following link: <a href="${verificationLink}">Verify Email</a></p>
+            </div>
+          `,
+        },
+        queueConfig,
+      );
+
+      throw new AppError("Please verify your account before logging in.", 403);
+    }
+
+    const isValidPassword = await this.comparePassword(
+      isExistingUser.password,
+      password.trim(),
+    );
+
+    if (!isValidPassword) throw new AppError("invalid credentials", 401);
+
+    const user = {
+      id: isExistingUser.id,
+      name: isExistingUser.fullName,
+      email: isExistingUser.email,
+      avatar: isExistingUser.avatar,
+      createdAt: isExistingUser.createdAt,
+      updatedAt: isExistingUser.updatedAt,
+    };
+
+    const token = signJWT(user, 60 * 15);
+
+    return { user, token };
   }
 }
