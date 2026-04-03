@@ -5,6 +5,9 @@ import { AuthRepository } from "../modules/auth/auth.repository";
 import { AuthService } from "../modules/auth/auth.service";
 import { AuthController } from "../modules/auth/auth.controller";
 import { rateLimiter } from "../middleware/rate-limiter.middleware";
+import passport from "passport";
+import { signJWT } from "../utils/jwt";
+import { User } from "../generated/prisma/client";
 
 const authRouter = Router();
 
@@ -54,24 +57,25 @@ authRouter.post(
   authController.requestPasswordResetLink,
 );
 
-// authRouter.get(
-//   "/google",
-//   passport.authenticate("google", { scope: ["profile", "email"] }),
-// );
-// authRouter.get(
-//   "/google/callback",
-//   passport.authenticate("google", { session: false }),
-//   (req, res) => {
-//     const user = req.user as User;
+authRouter.get(
+  "/google",
+  passport.authenticate("google", { scope: ["profile", "email"] }),
+);
 
-//     const token = signJWT(user, 60 * 15);
+authRouter.get(
+  "/google/callback",
+  passport.authenticate("google", { session: false }),
+  (req, res) => {
+    const user = req.user as User;
 
-//     res.status(200).json({
-//       message: "Login successful",
-//       token,
-//       user,
-//     });
-//   },
-// );
+    const token = signJWT(user, 60 * 15);
+
+    res.status(200).json({
+      message: "Login successful",
+      token,
+      user,
+    });
+  },
+);
 
 export default authRouter;
