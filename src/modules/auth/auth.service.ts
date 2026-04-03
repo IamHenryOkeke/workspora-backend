@@ -233,4 +233,54 @@ export class AuthService {
       email,
     };
   }
+
+  async sendPasswordResetLink(email: string) {
+    const normalizedEmail = email.toLowerCase();
+
+    const existingUserByEmail =
+      await this.authRepo.getUserByEmail(normalizedEmail);
+
+    if (!existingUserByEmail) throw new AppError("Invalid credentials.", 409);
+
+    await this.authRepo.deleteToken(existingUserByEmail.id);
+
+    const token = this.createToken();
+
+    const values = {
+      token,
+      expires: new Date(Date.now() + 60 * 5 * 1000),
+      user: {
+        connect: {
+          id: existingUserByEmail.id,
+        },
+      },
+      type: TokenType.PASSWORD_RESET,
+    };
+
+    await this.authRepo.createToken(values);
+
+    const verificationLink = `${FRONTEND_URL}/reset-password?token=${token}`;
+
+    await emailQueue.add(
+      "send-password-reset-email",
+      {
+        title: "Reset Your Password!",
+        to: existingUserByEmail.email,
+        name: existingUserByEmail.fullName,
+        content: `
+          <div>
+            <p>Hello ${existingUserByEmail.fullName},</p>
+            <p>You requested to reset your password. Click the button below:</p>
+            <p><a href="${verificationLink}" style="padding: 10px 15px; background: #007BFF; color: white; text-decoration: none;">Reset Password</a></p>
+            <p>If you didn't request this, you can ignore this email.</p>
+          </div>
+        `,
+      },
+      queueConfig,
+    );
+
+    return {
+      message: "Password reset email sent successful. Please check your email",
+    };
+  }
 }

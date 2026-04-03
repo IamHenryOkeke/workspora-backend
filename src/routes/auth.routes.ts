@@ -42,10 +42,11 @@ authRouter.post(
   authController.requestVerificationLink,
 );
 
-// authRouter.post(
-//   "/request-password-reset",
-//   validate({ body: sendVerificationLinkSchema }),
-// );
+authRouter.post(
+  "/request-password-reset",
+  validate({ body: AuthSchema.sendVerificationLinkSchema }),
+);
+
 // authRouter.post(
 //   "/reset-password",
 //   validate({ body: resetPassswordSchema }),
