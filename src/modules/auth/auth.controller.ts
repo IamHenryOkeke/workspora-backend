@@ -7,13 +7,9 @@ export class AuthController {
 
   register = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
-      const user = await this.authService.register(req.body);
+      const result = await this.authService.register(req.body);
 
-      res.status(201).json({
-        message:
-          "Registration successful. Please check your email for a verification link",
-        user,
-      });
+      res.status(201).json(result);
     },
   );
 
@@ -28,13 +24,9 @@ export class AuthController {
   );
 
   logIn = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { user, token } = await this.authService.logIn(req.body);
+    const result = await this.authService.logIn(req.body);
 
-    res.status(201).json({
-      message: "Login successful",
-      user,
-      token,
-    });
+    res.status(200).json(result);
   });
 
   requestVerificationLink = asyncHandler(

@@ -14,7 +14,6 @@ export const validate =
     if (schemas.body) {
       const result = schemas.body.safeParse(req.body);
       if (result.error) {
-        console.log(z.flattenError(result.error).fieldErrors);
         throw new AppError(
           "Validation failed",
           400,
@@ -26,18 +25,17 @@ export const validate =
 
     if (schemas.query) {
       const result = schemas.query.safeParse(req.query);
-      if (!result.success)
+      if (result.error)
         throw new AppError(
           "Validation failed",
           400,
           z.flattenError(result.error).fieldErrors,
         );
-      req.query = result.data as Request["query"];
     }
 
     if (schemas.params) {
       const result = schemas.params.safeParse(req.params);
-      if (!result.success)
+      if (result.error)
         throw new AppError(
           "Validation failed",
           400,

@@ -1,9 +1,6 @@
-import dotenv from "dotenv";
-dotenv.config();
-
 import { Job, Worker } from "bullmq";
-import { redis } from "../lib/ioredis";
 import { sendMail } from "../lib/nodemailer";
+import { redis } from "../lib/ioredis";
 
 new Worker(
   "email-queue",

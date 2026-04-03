@@ -23,7 +23,7 @@ export class AuthSchema {
 
   static verifyAccountQuerySchema = z.object({
     token: z
-      .string()
+      .string({ error: "Token is required" })
       .min(3, { error: "Token must be at least 3 characters long" }),
   });
 
@@ -37,7 +37,7 @@ export class AuthSchema {
     .omit({ fullName: true, email: true })
     .extend({
       token: z
-        .string()
+        .string({ error: "Token is required" })
         .min(3, { error: "Token must be at least 3 characters long" }),
     });
 }

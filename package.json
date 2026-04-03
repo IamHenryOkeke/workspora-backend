@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
+    "worker:dev": "ts-node-dev --respawn --transpile-only src/workers/email.worker.ts",
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint .",

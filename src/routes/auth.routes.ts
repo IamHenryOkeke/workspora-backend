@@ -54,7 +54,7 @@ authRouter.post(
 authRouter.post(
   "/reset-password",
   validate({ body: AuthSchema.resetPassswordSchema }),
-  authController.requestPasswordResetLink,
+  authController.resetPassword,
 );
 
 authRouter.get(

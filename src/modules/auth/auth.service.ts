@@ -84,7 +84,11 @@ export class AuthService {
       email: newUser.email,
     };
 
-    return user;
+    return {
+      message:
+        "Registration successful. Please check your email for a verification link",
+      user,
+    };
   }
 
   async verifyAccount(token: string) {
@@ -158,7 +162,10 @@ export class AuthService {
         queueConfig,
       );
 
-      throw new AppError("Please verify your account before logging in.", 403);
+      throw new AppError(
+        "Please verify your account through the link sent to your mail before logging in.",
+        403,
+      );
     }
 
     const isValidPassword = await this.comparePassword(
@@ -170,16 +177,16 @@ export class AuthService {
 
     const user = {
       id: isExistingUser.id,
-      name: isExistingUser.fullName,
-      email: isExistingUser.email,
-      avatar: isExistingUser.avatar,
-      createdAt: isExistingUser.createdAt,
-      updatedAt: isExistingUser.updatedAt,
+      fullName: isExistingUser.fullName,
     };
 
     const token = signJWT(user, 60 * 15);
 
-    return { user, token };
+    return {
+      message: "Login successful",
+      user,
+      token,
+    };
   }
 
   async sendVerificationEmail(email: string) {
