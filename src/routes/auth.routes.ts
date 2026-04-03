@@ -45,12 +45,14 @@ authRouter.post(
 authRouter.post(
   "/request-password-reset",
   validate({ body: AuthSchema.sendVerificationLinkSchema }),
+  authController.requestPasswordResetLink,
 );
 
-// authRouter.post(
-//   "/reset-password",
-//   validate({ body: resetPassswordSchema }),
-// );
+authRouter.post(
+  "/reset-password",
+  validate({ body: AuthSchema.resetPassswordSchema }),
+  authController.requestPasswordResetLink,
+);
 
 // authRouter.get(
 //   "/google",

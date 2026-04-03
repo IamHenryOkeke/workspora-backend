@@ -53,7 +53,15 @@ export class AuthController {
     async (req: Request, res: Response): Promise<void> => {
       const { email } = req.body;
 
-      const result = await this.authService.sendVerificationEmail(email);
+      const result = await this.authService.sendPasswordResetLink(email);
+
+      res.status(200).json(result);
+    },
+  );
+
+  resetPassword = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const result = await this.authService.resetPassword(req.body);
 
       res.status(200).json(result);
     },

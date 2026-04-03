@@ -283,4 +283,29 @@ export class AuthService {
       message: "Password reset email sent successful. Please check your email",
     };
   }
+
+  async resetPassword(data: { token: string; password: string }) {
+    const { token, password } = data;
+    const existingToken = await this.authRepo.getToken(
+      token,
+      TokenType.PASSWORD_RESET,
+    );
+
+    if (!existingToken)
+      throw new AppError("Reset token is invalid or has expired.", 400);
+
+    const user = await this.authRepo.getUserById(existingToken.userId);
+
+    if (!user) throw new AppError("User not found", 404);
+
+    const hashedPassword = await this.hashPassword(password);
+
+    await this.authRepo.updateUser(existingToken.userId, {
+      password: hashedPassword,
+    });
+
+    await this.authRepo.deleteToken(existingToken.userId);
+
+    return { message: "Password reset successful." };
+  }
 }

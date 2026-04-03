@@ -27,12 +27,17 @@ export class AuthSchema {
       .min(3, { error: "Token must be at least 3 characters long" }),
   });
 
-  static loginUserSchema = z.object({
-    email: z.string({ error: "Email is required" }),
-    password: z.string({ error: "Password is required" }).min(6),
-  });
+  static loginUserSchema = this.createUserSchema.omit({ fullName: true });
 
   static sendVerificationLinkSchema = this.loginUserSchema.pick({
     email: true,
   });
+
+  static resetPassswordSchema = this.createUserSchema
+    .omit({ fullName: true, email: true })
+    .extend({
+      token: z
+        .string()
+        .min(3, { error: "Token must be at least 3 characters long" }),
+    });
 }
