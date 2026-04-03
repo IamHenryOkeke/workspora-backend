@@ -181,4 +181,56 @@ export class AuthService {
 
     return { user, token };
   }
+
+  async sendVerificationEmail(email: string) {
+    const normalizedEmail = email.toLowerCase();
+
+    const existingUser = await this.authRepo.getUserByEmail(normalizedEmail);
+
+    if (!existingUser) throw new AppError("Invalid credentials.", 401);
+
+    if (existingUser.isVerified)
+      throw new AppError("Account verified already", 409);
+
+    await this.authRepo.deleteToken(existingUser.id);
+
+    const token = this.createToken();
+
+    const values = {
+      token,
+      expires: new Date(Date.now() + 60 * 5 * 1000),
+      user: {
+        connect: {
+          id: existingUser.id,
+        },
+      },
+      type: TokenType.EMAIL_VERIFICATION,
+    };
+
+    await this.authRepo.createToken(values);
+
+    const verificationLink = `${FRONTEND_URL}/verify-account?token=${token}`;
+
+    await emailQueue.add(
+      "send-verification-email",
+      {
+        title: "Verify Your account!",
+        to: existingUser.email,
+        name: existingUser.fullName,
+        content: `
+          <div>
+            <p>Hello ${existingUser.fullName || existingUser.email},</p>
+            <p>Please verify your email by clicking the following link: <a href="${verificationLink}">Verify Email</a></p>
+          </div>
+        `,
+      },
+      queueConfig,
+    );
+
+    return {
+      message:
+        "Verification email sent successful. Please check your email for a verification link",
+      email,
+    };
+  }
 }

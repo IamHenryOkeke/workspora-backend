@@ -31,4 +31,8 @@ export class AuthSchema {
     email: z.string({ error: "Email is required" }),
     password: z.string({ error: "Password is required" }).min(6),
   });
+
+  static sendVerificationLinkSchema = this.loginUserSchema.pick({
+    email: true,
+  });
 }

@@ -29,17 +29,19 @@ authRouter.get(
   authController.verifyAccount,
 );
 
-// authRouter.post(
-//   "/request-verification-link",
-//   validate({ body: sendVerificationLinkSchema }),
-// );
-
 authRouter.post(
   "/login",
   rateLimiter(5),
   validate({ body: AuthSchema.loginUserSchema }),
   authController.logIn,
 );
+
+authRouter.post(
+  "/request-verification-link",
+  validate({ body: AuthSchema.sendVerificationLinkSchema }),
+  authController.requestVerificationLink,
+);
+
 // authRouter.post(
 //   "/request-password-reset",
 //   validate({ body: sendVerificationLinkSchema }),
