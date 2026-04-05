@@ -13,30 +13,77 @@ datasource db {
 }
 
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  password    String?
-  googleId    String?  @unique
-  fullName    String   @db.VarChar(255)
-  avatar      String?
-  phoneNumber String?
-  isVerified  Boolean  @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id            String         @id @default(cuid())
+  email         String         @unique
+  password      String?
+  googleId      String?        @unique
+  fullName      String         @db.VarChar(255)
+  avatar        String?
+  phoneNumber   String?
+  isVerified    Boolean        @default(false)
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
   // deletedAt   DateTime?
-  tokens      Token[]
+  tokens        Token[]
+  organizations Organization[]
+  members       Member[]
 }
 
 enum TokenType {
-  PASSWORD_RESET
-  EMAIL_VERIFICATION
+  REFRESH
+  VERIFY_EMAIL
+  RESET_PASSWORD
 }
 
 model Token {
-  id      String    @id @default(cuid())
-  userId  String
-  user    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  token   String    @unique @default(cuid())
-  type    TokenType
-  expires DateTime
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      TokenType
+  token     String    @unique
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+
+  @@index([userId, type])
+}
+
+model Organization {
+  id          String    @id @default(cuid())
+  name        String
+  description String
+  ownerId     String
+  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  deletedAt   DateTime?
+  members     Member[]
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  MEMBER
+}
+
+enum MemberStatus {
+  PENDING
+  INVITED
+  ACTIVE
+  SUSPENDED
+  REMOVED
+}
+
+model Member {
+  id             String       @id @default(cuid())
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  userId         String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role           MemberRole   @default(MEMBER)
+  status         MemberStatus @default(PENDING)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+
+  @@unique([organizationId, userId])
 }
