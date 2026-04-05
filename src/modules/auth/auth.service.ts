@@ -7,9 +7,15 @@ import crypto from "crypto";
 import { emailQueue } from "../../queues/email.queue";
 import { queueConfig } from "../../utils/queue-config";
 import { signJWT } from "../../utils/jwt";
+import { prisma } from "../../lib/prisma";
 
 const FRONTEND_URL = getEnv("FRONTEND_URL");
 
+const TOKEN_EXPIRY = {
+  EMAIL_VERIFICATION: 10 * 60 * 1000,
+  PASSWORD_RESET: 5 * 60 * 1000,
+  ACCESS_TOKEN: 60 * 15,
+};
 export class AuthService {
   constructor(private authRepo: AuthRepository) {}
 
@@ -23,8 +29,46 @@ export class AuthService {
     return result;
   }
 
-  private createToken() {
-    return crypto.randomBytes(32).toString("hex");
+  private generateToken() {
+    const raw = crypto.randomBytes(32).toString("hex");
+    const hashed = crypto.createHash("sha256").update(raw).digest("hex");
+    return { raw, hashed };
+  }
+
+  private async issueVerificationToken(user: {
+    id: string;
+    email: string;
+    fullName: string;
+  }) {
+    await this.authRepo.deleteTokens(user.id, TokenType.EMAIL_VERIFICATION);
+
+    const { raw, hashed } = this.generateToken();
+
+    await this.authRepo.createToken({
+      token: hashed,
+      expires: new Date(Date.now() + TOKEN_EXPIRY.EMAIL_VERIFICATION),
+      user: { connect: { id: user.id } },
+      type: TokenType.EMAIL_VERIFICATION,
+    });
+
+    const verificationLink = `${FRONTEND_URL}/verify-account?token=${raw}`;
+
+    await emailQueue.add(
+      "send-verification-email",
+      {
+        title: "Verify your account",
+        to: user.email,
+        name: user.fullName,
+        content: `
+        <div>
+          <p>Hello ${user.fullName || user.email},</p>
+          <p>Please verify your email by clicking the following link: <a href="${verificationLink}">Verify Email</a></p>
+          <p>Link expires in 10 minutes.</p>
+        </div>
+      `,
+      },
+      queueConfig,
+    );
   }
 
   async register(data: { email: string; password: string; fullName: string }) {
@@ -44,71 +88,45 @@ export class AuthService {
 
     const newUser = await this.authRepo.createUser(values);
 
-    await this.authRepo.deleteToken(newUser.id);
-
-    const token = this.createToken();
-    await this.authRepo.createToken({
-      token,
-      expires: new Date(Date.now() + 60 * 10 * 1000),
-      user: {
-        connect: {
-          id: newUser.id,
-        },
-      },
-      type: TokenType.EMAIL_VERIFICATION,
-    });
-
-    const verificationLink = `${FRONTEND_URL}/verify-account?token=${token}`;
-
-    await emailQueue.add(
-      "send-welcome-email",
-      {
-        title: "Welcome to AlphaBlocks!",
-        to: newUser.email,
-        name: newUser.fullName,
-        content: `
-          <div>
-            <p>Hello ${newUser.fullName || newUser.email},</p>
-            <p>Welcome to AlphaBlocks! We're excited to have you on board.</p>
-            <p>Please verify your email by clicking the following link: <a href="${verificationLink}">Verify Email</a></p>
-            <p>Link expires in 10 minutes</p>
-          </div>
-        `,
-      },
-      queueConfig,
-    );
-
-    const user = {
-      id: newUser.id,
-      fullName: newUser.fullName,
-      email: newUser.email,
-    };
+    await this.issueVerificationToken(newUser);
 
     return {
       message:
         "Registration successful. Please check your email for a verification link",
-      user,
     };
   }
 
   async verifyAccount(token: string) {
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
     const existingToken = await this.authRepo.getToken(
-      token,
+      hashedToken,
       TokenType.EMAIL_VERIFICATION,
     );
 
     if (!existingToken)
-      throw new AppError("Reset token is invalid or has expired.", 400);
+      throw new AppError("Token is invalid or has expired.", 400);
 
-    const user = await this.authRepo.getUserById(existingToken.userId);
+    if (existingToken.user.isVerified)
+      throw new AppError("Account is already verified.", 409);
 
-    if (!user) throw new AppError("User not found", 404);
-
-    if (user.isVerified) return { message: "Account is already verified." };
-
-    const values = { isVerified: true };
-
-    await this.authRepo.updateUser(user.id, values);
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: existingToken.userId },
+          data: { isVerified: true },
+        });
+        await tx.token.deleteMany({
+          where: {
+            userId: existingToken.userId,
+            type: TokenType.EMAIL_VERIFICATION,
+          },
+        });
+      });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      throw new AppError("Failed to verify account. Please try again.", 500);
+    }
 
     return { message: "Account verification successful." };
   }
@@ -119,7 +137,7 @@ export class AuthService {
       email.toLowerCase(),
     );
 
-    if (!isExistingUser) throw new AppError("invalid credentials", 401);
+    if (!isExistingUser) throw new AppError("Invalid credentials", 401);
 
     if (!isExistingUser.password) {
       if (isExistingUser.googleId)
@@ -129,38 +147,7 @@ export class AuthService {
     }
 
     if (!isExistingUser.isVerified) {
-      await this.authRepo.deleteToken(isExistingUser.id);
-
-      const token = this.createToken();
-
-      await this.authRepo.createToken({
-        token,
-        expires: new Date(Date.now() + 60 * 10 * 1000),
-        user: {
-          connect: {
-            id: isExistingUser.id,
-          },
-        },
-        type: TokenType.EMAIL_VERIFICATION,
-      });
-
-      const verificationLink = `${FRONTEND_URL}/verify-account?token=${token}`;
-
-      await emailQueue.add(
-        "send-verification-email",
-        {
-          title: "Verify Your account!",
-          to: isExistingUser.email,
-          name: isExistingUser.fullName,
-          content: `
-            <div>
-              <p>Hello ${isExistingUser.fullName || isExistingUser.email},</p>
-              <p>Please verify your email by clicking the following link: <a href="${verificationLink}">Verify Email</a></p>
-            </div>
-          `,
-        },
-        queueConfig,
-      );
+      await this.issueVerificationToken(isExistingUser);
 
       throw new AppError(
         "Please verify your account through the link sent to your mail before logging in.",
@@ -173,14 +160,14 @@ export class AuthService {
       password.trim(),
     );
 
-    if (!isValidPassword) throw new AppError("invalid credentials", 401);
+    if (!isValidPassword) throw new AppError("Invalid credentials", 401);
 
     const user = {
       id: isExistingUser.id,
       fullName: isExistingUser.fullName,
     };
 
-    const token = signJWT(user, 60 * 15);
+    const token = signJWT(user, TOKEN_EXPIRY.ACCESS_TOKEN);
 
     return {
       message: "Login successful",
@@ -194,50 +181,20 @@ export class AuthService {
 
     const existingUser = await this.authRepo.getUserByEmail(normalizedEmail);
 
-    if (!existingUser) throw new AppError("Invalid credentials.", 401);
+    if (!existingUser)
+      return {
+        message:
+          "Verification email sent successful. Please check your email for a verification link",
+      };
 
     if (existingUser.isVerified)
       throw new AppError("Account verified already", 409);
 
-    await this.authRepo.deleteToken(existingUser.id);
-
-    const token = this.createToken();
-
-    const values = {
-      token,
-      expires: new Date(Date.now() + 60 * 5 * 1000),
-      user: {
-        connect: {
-          id: existingUser.id,
-        },
-      },
-      type: TokenType.EMAIL_VERIFICATION,
-    };
-
-    await this.authRepo.createToken(values);
-
-    const verificationLink = `${FRONTEND_URL}/verify-account?token=${token}`;
-
-    await emailQueue.add(
-      "send-verification-email",
-      {
-        title: "Verify Your account!",
-        to: existingUser.email,
-        name: existingUser.fullName,
-        content: `
-          <div>
-            <p>Hello ${existingUser.fullName || existingUser.email},</p>
-            <p>Please verify your email by clicking the following link: <a href="${verificationLink}">Verify Email</a></p>
-          </div>
-        `,
-      },
-      queueConfig,
-    );
+    await this.issueVerificationToken(existingUser);
 
     return {
       message:
         "Verification email sent successful. Please check your email for a verification link",
-      email,
     };
   }
 
@@ -247,15 +204,21 @@ export class AuthService {
     const existingUserByEmail =
       await this.authRepo.getUserByEmail(normalizedEmail);
 
-    if (!existingUserByEmail) throw new AppError("Invalid credentials.", 409);
+    if (!existingUserByEmail)
+      return {
+        message: "If that email exists, a password reset link has been sent.",
+      };
 
-    await this.authRepo.deleteToken(existingUserByEmail.id);
+    await this.authRepo.deleteTokens(
+      existingUserByEmail.id,
+      TokenType.PASSWORD_RESET,
+    );
 
-    const token = this.createToken();
+    const { raw, hashed } = this.generateToken();
 
     const values = {
-      token,
-      expires: new Date(Date.now() + 60 * 5 * 1000),
+      token: hashed,
+      expires: new Date(Date.now() + TOKEN_EXPIRY.PASSWORD_RESET),
       user: {
         connect: {
           id: existingUserByEmail.id,
@@ -266,7 +229,7 @@ export class AuthService {
 
     await this.authRepo.createToken(values);
 
-    const verificationLink = `${FRONTEND_URL}/reset-password?token=${token}`;
+    const verificationLink = `${FRONTEND_URL}/reset-password?token=${raw}`;
 
     await emailQueue.add(
       "send-password-reset-email",
@@ -287,31 +250,42 @@ export class AuthService {
     );
 
     return {
-      message: "Password reset email sent successful. Please check your email",
+      message: "If that email exists, a password reset link has been sent.",
     };
   }
 
   async resetPassword(data: { token: string; password: string }) {
     const { token, password } = data;
+
+    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+
     const existingToken = await this.authRepo.getToken(
-      token,
+      hashedToken,
       TokenType.PASSWORD_RESET,
     );
 
     if (!existingToken)
       throw new AppError("Reset token is invalid or has expired.", 400);
 
-    const user = await this.authRepo.getUserById(existingToken.userId);
-
-    if (!user) throw new AppError("User not found", 404);
-
     const hashedPassword = await this.hashPassword(password);
 
-    await this.authRepo.updateUser(existingToken.userId, {
-      password: hashedPassword,
-    });
-
-    await this.authRepo.deleteToken(existingToken.userId);
+    try {
+      await prisma.$transaction(async (tx) => {
+        await tx.user.update({
+          where: { id: existingToken.userId },
+          data: { password: hashedPassword },
+        });
+        await tx.token.deleteMany({
+          where: {
+            userId: existingToken.userId,
+            type: TokenType.PASSWORD_RESET,
+          },
+        });
+      });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      throw new AppError("Failed to reset password. Please try again.", 500);
+    }
 
     return { message: "Password reset successful." };
   }

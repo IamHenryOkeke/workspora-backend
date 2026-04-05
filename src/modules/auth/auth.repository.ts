@@ -39,13 +39,15 @@ export class AuthRepository {
         },
         type,
       },
+      include: { user: true },
     });
   }
 
-  async deleteToken(userId: string) {
+  async deleteTokens(userId: string, type: TokenType) {
     return prisma.token.deleteMany({
       where: {
         userId,
+        type,
       },
     });
   }
