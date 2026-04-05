@@ -9,12 +9,12 @@ import { getEnv } from "./env";
 import { prisma } from "../lib/prisma";
 import { AuthRepository } from "../modules/auth/auth.repository";
 
-const authRepo = new AuthRepository();
-const { getUserByGoogleId, getUserByEmail, createUser, updateUser } = authRepo;
-
 interface JwtPayload {
   id: string;
 }
+
+const authRepo = new AuthRepository();
+const { getUserByGoogleId, getUserByEmail, createUser, updateUser } = authRepo;
 
 const opts: StrategyOptions = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -50,7 +50,7 @@ passport.use(
     {
       clientID: getEnv("GOOGLE_CLIENT_ID"),
       clientSecret: getEnv("GOOGLE_CLIENT_SECRET"),
-      callbackURL: "http://localhost:5000/api/auth/google/callback",
+      callbackURL: getEnv("GOOGLE_CALLBACK_URL"),
     },
     async function (_accessToken, _refreshToken, profile, done) {
       try {
@@ -58,22 +58,35 @@ passport.use(
         const email = profile.emails?.[0].value || "";
         const name = profile.displayName;
         const image = profile.photos?.[0].value;
+        const isVerified = profile.emails?.[0].verified || false;
 
         const existingUserByGoogleId = await getUserByGoogleId(googleId);
-        if (existingUserByGoogleId) return done(null, existingUserByGoogleId);
+        if (existingUserByGoogleId) {
+          const data = {
+            id: existingUserByGoogleId.id,
+            name: existingUserByGoogleId.fullName,
+            avatar: existingUserByGoogleId.avatar,
+          };
+          return done(null, data);
+        }
 
-        const existingUserByEmail = await getUserByEmail(
-          email.toLowerCase() || "",
-        );
+        const existingUserByEmail = await getUserByEmail(email.toLowerCase());
+
         if (existingUserByEmail) {
           const values = {
             googleId,
             ...(!existingUserByEmail.avatar && { avatar: image }),
             ...(!existingUserByEmail.fullName && { fullName: name }),
-            isVerified: true,
+            ...(!existingUserByEmail.isVerified && { isVerified }),
           };
           const updatedUser = await updateUser(existingUserByEmail.id, values);
-          return done(null, updatedUser);
+
+          const data = {
+            id: updatedUser.id,
+            name: updatedUser.fullName,
+            avatar: updatedUser.avatar,
+          };
+          return done(null, data);
         }
 
         const values = {
@@ -81,10 +94,17 @@ passport.use(
           email,
           fullName: name,
           avatar: image,
+          isVerified,
         };
 
         const newUser = await createUser(values);
-        return done(null, newUser);
+
+        const data = {
+          id: newUser.id,
+          name: newUser.fullName,
+          avatar: newUser.avatar,
+        };
+        return done(null, data);
       } catch (err) {
         console.error("Google OAuth error:", err);
         done(err);

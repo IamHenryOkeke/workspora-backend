@@ -3,6 +3,7 @@ import cors from "cors";
 import corsOptions from "./config/cors";
 import { errorMiddleware } from "./middleware/error.middleware";
 import * as routes from "./routes";
+import passport from "./config/passport-config";
 
 const app = express();
 
@@ -10,6 +11,8 @@ app.use(cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.use(passport.initialize());
 
 app.use("/api/auth", routes.authRouter);
 app.use("/api", routes.indexRouter);

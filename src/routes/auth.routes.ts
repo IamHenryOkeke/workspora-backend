@@ -5,9 +5,9 @@ import { AuthRepository } from "../modules/auth/auth.repository";
 import { AuthService } from "../modules/auth/auth.service";
 import { AuthController } from "../modules/auth/auth.controller";
 import { rateLimiter } from "../middleware/rate-limiter.middleware";
-import passport from "passport";
 import { signJWT } from "../utils/jwt";
 import { User } from "../generated/prisma/client";
+import passport from "passport";
 
 const authRouter = Router();
 
