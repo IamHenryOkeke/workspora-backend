@@ -15,6 +15,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(passport.initialize());
 
 app.use("/api/auth", routes.authRouter);
+app.use("/api/users", routes.userRouter);
 app.use("/api", routes.indexRouter);
 
 app.use((_rreq, res) => {
