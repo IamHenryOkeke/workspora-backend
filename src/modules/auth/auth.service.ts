@@ -2,32 +2,22 @@ import { getEnv } from "../../config/env";
 import { AppError } from "../../error/error-handler";
 import { TokenType } from "../../generated/prisma/enums";
 import { AuthRepository } from "./auth.repository";
-import * as argon2 from "argon2";
 import crypto from "crypto";
 import { emailQueue } from "../../queues/email.queue";
 import { queueConfig } from "../../utils/queue-config";
 import { signJWT } from "../../utils/jwt";
 import { prisma } from "../../lib/prisma";
+import { comparePassword, hashPassword } from "../../utils/password";
 
 const FRONTEND_URL = getEnv("FRONTEND_URL");
 
 const TOKEN_EXPIRY = {
-  EMAIL_VERIFICATION: 10 * 60 * 1000,
-  PASSWORD_RESET: 5 * 60 * 1000,
+  VERIFY_EMAIL: 10 * 60 * 1000,
+  RESET_PASSWORD: 5 * 60 * 1000,
   ACCESS_TOKEN: 60 * 15,
 };
 export class AuthService {
   constructor(private authRepo: AuthRepository) {}
-
-  private async hashPassword(password: string) {
-    const result = await argon2.hash(password);
-    return result;
-  }
-
-  private async comparePassword(hashedPassword: string, password: string) {
-    const result = await argon2.verify(hashedPassword, password);
-    return result;
-  }
 
   private generateToken() {
     const raw = crypto.randomBytes(32).toString("hex");
@@ -40,15 +30,15 @@ export class AuthService {
     email: string;
     fullName: string;
   }) {
-    await this.authRepo.deleteTokens(user.id, TokenType.EMAIL_VERIFICATION);
+    await this.authRepo.deleteTokens(user.id, TokenType.VERIFY_EMAIL);
 
     const { raw, hashed } = this.generateToken();
 
     await this.authRepo.createToken({
       token: hashed,
-      expires: new Date(Date.now() + TOKEN_EXPIRY.EMAIL_VERIFICATION),
+      expiresAt: new Date(Date.now() + TOKEN_EXPIRY.VERIFY_EMAIL),
       user: { connect: { id: user.id } },
-      type: TokenType.EMAIL_VERIFICATION,
+      type: TokenType.VERIFY_EMAIL,
     });
 
     const verificationLink = `${FRONTEND_URL}/verify-account?token=${raw}`;
@@ -78,7 +68,7 @@ export class AuthService {
     if (existingUser)
       throw new AppError("Email already used. Please use another email.", 409);
 
-    const hashedPassword = await this.hashPassword(data.password);
+    const hashedPassword = await hashPassword(data.password);
 
     const values = {
       email: normalizedEmail,
@@ -101,7 +91,7 @@ export class AuthService {
 
     const existingToken = await this.authRepo.getToken(
       hashedToken,
-      TokenType.EMAIL_VERIFICATION,
+      TokenType.VERIFY_EMAIL,
     );
 
     if (!existingToken)
@@ -119,7 +109,7 @@ export class AuthService {
         await tx.token.deleteMany({
           where: {
             userId: existingToken.userId,
-            type: TokenType.EMAIL_VERIFICATION,
+            type: TokenType.VERIFY_EMAIL,
           },
         });
       });
@@ -155,7 +145,7 @@ export class AuthService {
       );
     }
 
-    const isValidPassword = await this.comparePassword(
+    const isValidPassword = await comparePassword(
       isExistingUser.password,
       password.trim(),
     );
@@ -211,20 +201,20 @@ export class AuthService {
 
     await this.authRepo.deleteTokens(
       existingUserByEmail.id,
-      TokenType.PASSWORD_RESET,
+      TokenType.RESET_PASSWORD,
     );
 
     const { raw, hashed } = this.generateToken();
 
     const values = {
       token: hashed,
-      expires: new Date(Date.now() + TOKEN_EXPIRY.PASSWORD_RESET),
+      expiresAt: new Date(Date.now() + TOKEN_EXPIRY.RESET_PASSWORD),
       user: {
         connect: {
           id: existingUserByEmail.id,
         },
       },
-      type: TokenType.PASSWORD_RESET,
+      type: TokenType.RESET_PASSWORD,
     };
 
     await this.authRepo.createToken(values);
@@ -261,13 +251,13 @@ export class AuthService {
 
     const existingToken = await this.authRepo.getToken(
       hashedToken,
-      TokenType.PASSWORD_RESET,
+      TokenType.RESET_PASSWORD,
     );
 
     if (!existingToken)
       throw new AppError("Reset token is invalid or has expired.", 400);
 
-    const hashedPassword = await this.hashPassword(password);
+    const hashedPassword = await hashPassword(password);
 
     try {
       await prisma.$transaction(async (tx) => {
@@ -278,7 +268,7 @@ export class AuthService {
         await tx.token.deleteMany({
           where: {
             userId: existingToken.userId,
-            type: TokenType.PASSWORD_RESET,
+            type: TokenType.RESET_PASSWORD,
           },
         });
       });
