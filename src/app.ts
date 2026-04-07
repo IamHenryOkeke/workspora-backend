@@ -16,6 +16,7 @@ app.use(passport.initialize());
 
 app.use("/api/auth", routes.authRouter);
 app.use("/api/user", routes.userRouter);
+app.use("/api/organization", routes.organizationRouter);
 app.use("/api", routes.indexRouter);
 
 app.use((_rreq, res) => {
