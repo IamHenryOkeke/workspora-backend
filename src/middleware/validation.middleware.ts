@@ -31,6 +31,7 @@ export const validate =
           400,
           z.flattenError(result.error).fieldErrors,
         );
+      req.validatedQuery = result.data as Record<string, unknown>;
     }
 
     if (schemas.params) {
