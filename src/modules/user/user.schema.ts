@@ -22,6 +22,10 @@ export class UserSchema {
       path: ["updateData"],
     });
 
+  static updateUserProfilePictureSchema = z.object({
+    avatar: z.url({ error: "Avatar must be a valid URL" }),
+  });
+
   static updateUserPasswordSchema = z.object({
     currentPassword: z.string({ error: "Current password is required" }),
     newPassword: z

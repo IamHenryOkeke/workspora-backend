@@ -5,6 +5,8 @@ import { UserService } from "../modules/user/user.service";
 import { UserController } from "../modules/user/user.controller";
 import { isAuthenticated } from "../middleware/auth.middleware";
 import { UserSchema } from "../modules/user/user.schema";
+import { addFilePathToBody } from "../middleware/addFilePathToBody.middleware";
+import { handleUpload } from "../middleware/handleupload.middleware";
 
 const userRouter = Router();
 
@@ -20,6 +22,16 @@ userRouter.patch(
   "/me",
   validate({
     body: UserSchema.updateUserSchema,
+  }),
+  userController.updateUserProfile,
+);
+
+userRouter.patch(
+  "/me/profile-picture",
+  handleUpload("avatar"),
+  addFilePathToBody("avatar"),
+  validate({
+    body: UserSchema.updateUserProfilePictureSchema,
   }),
   userController.updateUserProfile,
 );
