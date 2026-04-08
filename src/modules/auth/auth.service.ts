@@ -97,6 +97,9 @@ export class AuthService {
     if (!existingToken)
       throw new AppError("Token is invalid or has expired.", 400);
 
+    if (existingToken.user.deletedAt)
+      throw new AppError("Account no longer exists.", 404);
+
     if (existingToken.user.isVerified)
       throw new AppError("Account is already verified.", 409);
 
@@ -256,6 +259,9 @@ export class AuthService {
 
     if (!existingToken)
       throw new AppError("Reset token is invalid or has expired.", 400);
+
+    if (existingToken.user.deletedAt)
+      throw new AppError("Account no longer exists.", 404);
 
     const hashedPassword = await hashPassword(password);
 

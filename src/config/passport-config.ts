@@ -6,39 +6,36 @@ import {
 } from "passport-jwt";
 import { Strategy as GoogleStrategy } from "passport-google-oauth20";
 import { getEnv } from "./env";
-import { prisma } from "../lib/prisma";
 import { AuthRepository } from "../modules/auth/auth.repository";
-
-interface JwtPayload {
-  id: string;
-}
+import { JwtPayload } from "../types/auth";
 
 const authRepo = new AuthRepository();
-const { getUserByGoogleId, getUserByEmail, createUser, updateUser } = authRepo;
 
 const opts: StrategyOptions = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
   secretOrKey: getEnv("JWT_SECRET"),
 };
 
+const toUserData = (user: {
+  id: string;
+  fullName: string;
+  email: string;
+  avatar: string | null | undefined;
+  isVerified: boolean;
+}) => ({
+  id: user.id,
+  fullName: user.fullName,
+  email: user.email,
+  avatar: user.avatar,
+  isVerified: user.isVerified,
+});
+
 passport.use(
   new JwtStrategy(opts, async (jwt_payload: JwtPayload, done) => {
     try {
-      const user = await prisma.user.findUnique({
-        where: { id: jwt_payload.id },
-      });
-
-      const data = {
-        id: user?.id,
-        name: user?.fullName,
-        email: user?.email,
-        avatar: user?.avatar,
-        createdAt: user?.createdAt,
-        updatedAt: user?.updatedAt,
-      };
-
-      if (user) return done(null, data);
-      return done(null, false);
+      const user = await authRepo.getUserById(jwt_payload.id);
+      if (!user) return done(null, false);
+      return done(null, toUserData(user));
     } catch (error) {
       return done(error, false);
     }
@@ -56,55 +53,42 @@ passport.use(
       try {
         const googleId = profile.id;
         const email = profile.emails?.[0].value || "";
-        const name = profile.displayName;
+        const fullName = profile.displayName;
         const image = profile.photos?.[0].value;
-        const isVerified = profile.emails?.[0].verified || false;
+        const isVerified = profile.emails?.[0].verified === true;
 
-        const existingUserByGoogleId = await getUserByGoogleId(googleId);
+        const existingUserByGoogleId =
+          await authRepo.getUserByGoogleId(googleId);
         if (existingUserByGoogleId) {
-          const data = {
-            id: existingUserByGoogleId.id,
-            name: existingUserByGoogleId.fullName,
-            avatar: existingUserByGoogleId.avatar,
-          };
-          return done(null, data);
+          return done(null, toUserData(existingUserByGoogleId));
         }
 
-        const existingUserByEmail = await getUserByEmail(email.toLowerCase());
+        const existingUserByEmail = await authRepo.getUserByEmail(
+          email.toLowerCase(),
+        );
 
         if (existingUserByEmail) {
           const values = {
             googleId,
             ...(!existingUserByEmail.avatar && { avatar: image }),
-            ...(!existingUserByEmail.fullName && { fullName: name }),
+            ...(!existingUserByEmail.fullName && { fullName }),
             ...(!existingUserByEmail.isVerified && { isVerified }),
           };
-          const updatedUser = await updateUser(existingUserByEmail.id, values);
-
-          const data = {
-            id: updatedUser.id,
-            name: updatedUser.fullName,
-            avatar: updatedUser.avatar,
-          };
-          return done(null, data);
+          const updatedUser = await authRepo.updateUser(
+            existingUserByEmail.id,
+            values,
+          );
+          return done(null, toUserData(updatedUser));
         }
-
         const values = {
           googleId,
           email,
-          fullName: name,
+          fullName,
           avatar: image,
           isVerified,
         };
-
-        const newUser = await createUser(values);
-
-        const data = {
-          id: newUser.id,
-          name: newUser.fullName,
-          avatar: newUser.avatar,
-        };
-        return done(null, data);
+        const newUser = await authRepo.createUser(values);
+        return done(null, toUserData(newUser));
       } catch (err) {
         console.error("Google OAuth error:", err);
         done(err);

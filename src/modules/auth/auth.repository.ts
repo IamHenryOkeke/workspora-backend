@@ -3,15 +3,15 @@ import { prisma } from "../../lib/prisma";
 
 export class AuthRepository {
   async getUserByEmail(email: string) {
-    return prisma.user.findUnique({ where: { email } });
+    return prisma.user.findUnique({ where: { email, deletedAt: null } });
   }
 
   async getUserById(id: string) {
-    return prisma.user.findUnique({ where: { id } });
+    return prisma.user.findUnique({ where: { id, deletedAt: null } });
   }
 
   async getUserByGoogleId(googleId: string) {
-    return prisma.user.findUnique({ where: { googleId } });
+    return prisma.user.findUnique({ where: { googleId, deletedAt: null } });
   }
 
   async createUser(data: Prisma.UserCreateInput) {
@@ -23,7 +23,10 @@ export class AuthRepository {
   }
 
   async deleteUser(id: string) {
-    return prisma.user.delete({ where: { id } });
+    return prisma.user.update({
+      where: { id },
+      data: { deletedAt: new Date() },
+    });
   }
 
   async createToken(data: Prisma.TokenCreateInput) {
@@ -34,10 +37,9 @@ export class AuthRepository {
     return prisma.token.findFirst({
       where: {
         token,
-        expires: {
-          gt: new Date(),
-        },
         type,
+        expiresAt: { gt: new Date() },
+        user: { deletedAt: null },
       },
       include: { user: true },
     });
