@@ -1,4 +1,5 @@
 import { Router, Request, Response } from "express";
+import { checkDatabaseConnection } from "../lib/prisma";
 
 const indexRouter = Router();
 
@@ -9,8 +10,13 @@ indexRouter.get("/", (_req: Request, res: Response) => {
   });
 });
 
-indexRouter.get("/health", (_req: Request, res: Response) => {
-  res.json({ status: "OK" });
+indexRouter.get("/health", async (_req: Request, res: Response) => {
+  const databaseConnected = await checkDatabaseConnection();
+  res.json({
+    status: "OK",
+    uptime: process.uptime(),
+    database: databaseConnected ? "connected" : "disconnected",
+  });
 });
 
 export default indexRouter;

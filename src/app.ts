@@ -14,10 +14,10 @@ app.use(express.urlencoded({ extended: true }));
 
 app.use(passport.initialize());
 
-app.use("/api/auth", routes.authRouter);
-app.use("/api/users", routes.userRouter);
-app.use("/api/organizations", routes.organizationRouter);
-app.use("/api", routes.indexRouter);
+app.use("/api/v1/auth", routes.authRouter);
+app.use("/api/v1/users", routes.userRouter);
+app.use("/api/v1/organizations", routes.organizationRouter);
+app.use("/api/v1", routes.indexRouter);
 
 app.use((_rreq, res) => {
   res.status(404).json({
