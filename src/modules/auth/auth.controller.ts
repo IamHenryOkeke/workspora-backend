@@ -15,9 +15,7 @@ export class AuthController {
 
   verifyAccount = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
-      const { token } = req.query;
-
-      const result = await this.authService.verifyAccount(token as string);
+      const result = await this.authService.verifyAccount(req.validatedQuery);
 
       res.status(200).json(result);
     },

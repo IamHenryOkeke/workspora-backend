@@ -4,8 +4,9 @@ export class AuthSchema {
   static createUserSchema = z.object({
     fullName: z
       .string({ error: "Name is required" })
-      .min(3, { error: "Name must be at least 3 characters long" }),
-    email: z.email({ error: "Email must be valid" }),
+      .min(3, { error: "Name must be at least 3 characters long" })
+      .trim(),
+    email: z.email({ error: "Email must be valid" }).trim().toLowerCase(),
     password: z
       .string()
       .min(8, { error: "Password must be at least 8 characters long" })

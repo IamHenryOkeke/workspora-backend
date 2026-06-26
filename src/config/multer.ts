@@ -1,9 +1,9 @@
 import { v2 as cloudinary } from "cloudinary";
 import { CloudinaryStorage } from "multer-storage-cloudinary";
 import multer from "multer";
-import e from "express";
 import { getEnv } from "./env";
 import { AppError } from "../error/error-handler";
+import { Request } from "express";
 
 cloudinary.config({
   cloud_name: getEnv("CLOUDINARY_CLOUD_NAME"),
@@ -20,18 +20,19 @@ const storage = new CloudinaryStorage({
 });
 
 const fileFilter = (
-  _req: e.Request,
+  _req: Request,
   file: Express.Multer.File,
   cb: multer.FileFilterCallback,
 ) => {
-  console.log(file);
   const allowedTypes = ["image/jpeg", "image/png", "image/jpg"];
 
   if (!allowedTypes.includes(file.mimetype)) {
     return cb(
-      new AppError("Invalid input", 400, {
-        image: `${file.mimetype} not allowed`,
-      }),
+      new AppError(
+        "Invalid input",
+        400,
+        `file type of ${file.mimetype} not allowed`,
+      ),
     );
   }
   cb(null, true);
@@ -39,6 +40,7 @@ const fileFilter = (
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 1 * 1024 * 1024 },
+  limits: { fileSize: 2 * 1024 * 1024 },
+
   fileFilter,
 });

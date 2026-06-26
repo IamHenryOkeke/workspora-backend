@@ -3,38 +3,33 @@ import { prisma } from "../../lib/prisma";
 
 export class AuthRepository {
   async getUserByEmail(email: string) {
-    return prisma.user.findUnique({ where: { email, deletedAt: null } });
+    return await prisma.user.findUnique({ where: { email, deletedAt: null } });
   }
-
   async getUserById(id: string) {
-    return prisma.user.findUnique({ where: { id, deletedAt: null } });
+    return await prisma.user.findUnique({ where: { id, deletedAt: null } });
   }
-
   async getUserByGoogleId(googleId: string) {
-    return prisma.user.findUnique({ where: { googleId, deletedAt: null } });
+    return await prisma.user.findUnique({
+      where: { googleId, deletedAt: null },
+    });
   }
-
   async createUser(data: Prisma.UserCreateInput) {
-    return prisma.user.create({ data });
+    return await prisma.user.create({ data });
   }
-
   async updateUser(id: string, data: Prisma.UserUpdateInput) {
-    return prisma.user.update({ where: { id }, data });
+    return await prisma.user.update({ where: { id }, data });
   }
-
   async deleteUser(id: string) {
-    return prisma.user.update({
+    return await prisma.user.update({
       where: { id },
       data: { deletedAt: new Date() },
     });
   }
-
   async createToken(data: Prisma.TokenCreateInput) {
-    return prisma.token.create({ data });
+    return await prisma.token.create({ data });
   }
-
   async getToken(token: string, type: TokenType) {
-    return prisma.token.findFirst({
+    return await prisma.token.findFirst({
       where: {
         token,
         type,
@@ -44,13 +39,7 @@ export class AuthRepository {
       include: { user: true },
     });
   }
-
   async deleteTokens(userId: string, type: TokenType) {
-    return prisma.token.deleteMany({
-      where: {
-        userId,
-        type,
-      },
-    });
+    return await prisma.token.deleteMany({ where: { userId, type } });
   }
 }

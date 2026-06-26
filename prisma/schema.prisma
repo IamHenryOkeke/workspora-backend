@@ -16,14 +16,14 @@ model User {
   id            String         @id @default(cuid())
   email         String         @unique
   password      String?
-  googleId      String?        @unique
   fullName      String         @db.VarChar(255)
   avatar        String?
   phoneNumber   String?
+  googleId      String?        @unique
   isVerified    Boolean        @default(false)
   createdAt     DateTime       @default(now())
   updatedAt     DateTime       @updatedAt
-  deletedAt   DateTime?
+  deletedAt     DateTime?
   tokens        Token[]
   organizations Organization[]
   members       Member[]
@@ -50,6 +50,7 @@ model Token {
 model Organization {
   id          String    @id @default(cuid())
   name        String
+  slug        String    @unique
   description String
   logo        String
   ownerId     String

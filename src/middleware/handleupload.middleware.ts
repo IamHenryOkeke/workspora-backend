@@ -9,10 +9,17 @@ export const handleUpload = (fieldName: string) => {
       if (err instanceof multer.MulterError && err.code === "LIMIT_FILE_SIZE") {
         return next(
           new AppError("File too large", 400, {
-            [fieldName]: "File size should be less than 1MB",
+            [fieldName]: `${fieldName} size should be less than 2MB`,
           }),
         );
       }
+      // if (err instanceof multer.MulterError && err.code === "MISSING_FIELD_NAME") {
+      //   return next(
+      //     new AppError("Field missing", 400, {
+      //       [fieldName]: `${fieldName} size should be less than 2MB`,
+      //     }),
+      //   );
+      // }
       if (err) return next(err);
       next();
     });

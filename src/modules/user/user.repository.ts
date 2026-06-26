@@ -6,6 +6,7 @@ type GetInvitationsArgs = {
   take?: number;
   skip?: number;
 };
+
 export class UserRepository {
   async getUserById(id: string) {
     return prisma.user.findUnique({
@@ -22,13 +23,9 @@ export class UserRepository {
       },
     });
   }
-
   async getFullUserById(id: string) {
-    return prisma.user.findUnique({
-      where: { id },
-    });
+    return prisma.user.findUnique({ where: { id } });
   }
-
   async updateUserById(id: string, updateData: Prisma.UserUpdateInput) {
     return prisma.user.update({
       where: { id },
@@ -45,17 +42,11 @@ export class UserRepository {
       },
     });
   }
-
   async getInvitations({ where, take, skip }: GetInvitationsArgs) {
     const [invitations, total] = await Promise.all([
-      prisma.member.findMany({
-        where,
-        take,
-        skip,
-      }),
+      prisma.member.findMany({ where, take, skip }),
       prisma.member.count({ where }),
     ]);
-
     return { invitations, total };
   }
 }

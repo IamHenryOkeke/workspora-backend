@@ -14,7 +14,7 @@ const FRONTEND_URL = getEnv("FRONTEND_URL");
 const TOKEN_EXPIRY = {
   VERIFY_EMAIL: 10 * 60 * 1000,
   RESET_PASSWORD: 5 * 60 * 1000,
-  ACCESS_TOKEN: 60 * 15,
+  ACCESS_TOKEN: 60 * 60,
 };
 export class AuthService {
   constructor(private authRepo: AuthRepository) {}
@@ -62,18 +62,18 @@ export class AuthService {
   }
 
   async register(data: { email: string; password: string; fullName: string }) {
-    const normalizedEmail = data.email.toLowerCase();
+    const { email, password, fullName } = data;
 
-    const existingUser = await this.authRepo.getUserByEmail(normalizedEmail);
+    const existingUser = await this.authRepo.getUserByEmail(email);
     if (existingUser)
       throw new AppError("Email already used. Please use another email.", 409);
 
-    const hashedPassword = await hashPassword(data.password);
+    const hashedPassword = await hashPassword(password);
 
     const values = {
-      email: normalizedEmail,
+      email,
       password: hashedPassword,
-      fullName: data.fullName.trim(),
+      fullName: fullName.trim(),
     };
 
     const newUser = await this.authRepo.createUser(values);
@@ -86,8 +86,11 @@ export class AuthService {
     };
   }
 
-  async verifyAccount(token: string) {
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+  async verifyAccount(queryParams: { token: string }) {
+    const hashedToken = crypto
+      .createHash("sha256")
+      .update(queryParams.token)
+      .digest("hex");
 
     const existingToken = await this.authRepo.getToken(
       hashedToken,
@@ -158,6 +161,8 @@ export class AuthService {
     const user = {
       id: isExistingUser.id,
       fullName: isExistingUser.fullName,
+      email: isExistingUser.email,
+      avatar: isExistingUser.avatar,
     };
 
     const token = signJWT(user, TOKEN_EXPIRY.ACCESS_TOKEN);

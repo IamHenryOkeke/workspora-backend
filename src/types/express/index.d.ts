@@ -7,13 +7,11 @@ declare global {
       avatar?: string | null;
       isVerified: boolean;
     }
+    interface Request {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      validatedQuery?: any;
+    }
   }
 }
 
-declare module "express" {
-  interface Request {
-    validatedQuery?: Record<string, unknown>;
-    validatedBody?: Record<string, unknown>;
-    validatedParams?: Record<string, unknown>;
-  }
-}
+export {};
