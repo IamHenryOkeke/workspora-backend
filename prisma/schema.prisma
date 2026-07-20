@@ -13,20 +13,22 @@ datasource db {
 }
 
 model User {
-  id            String         @id @default(cuid())
-  email         String         @unique
-  password      String?
-  fullName      String         @db.VarChar(255)
-  avatar        String?
-  phoneNumber   String?
-  googleId      String?        @unique
-  isVerified    Boolean        @default(false)
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
-  deletedAt     DateTime?
-  tokens        Token[]
-  organizations Organization[]
-  members       Member[]
+  id                  String         @id @default(cuid())
+  email               String         @unique
+  password            String?
+  fullName            String         @db.VarChar(255)
+  avatar              String?
+  phoneNumber         String?
+  googleId            String?        @unique
+  isVerified          Boolean        @default(false)
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  deletedAt           DateTime?
+  tokens              Token[]
+  organizations       Organization[]
+  members             Member[]
+  invitations         Invitation[]   @relation("InvitationsSent")
+  receivedInvitations Invitation[]   @relation("InvitationRecipient")
 }
 
 enum TokenType {
@@ -48,17 +50,18 @@ model Token {
 }
 
 model Organization {
-  id          String    @id @default(cuid())
+  id          String       @id @default(cuid())
   name        String
-  slug        String    @unique
+  slug        String       @unique
   description String
   logo        String
   ownerId     String
-  owner       User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  owner       User         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
   deletedAt   DateTime?
   members     Member[]
+  invitations Invitation[]
 }
 
 enum MemberRole {
@@ -88,4 +91,32 @@ model Member {
   deletedAt      DateTime?
 
   @@unique([organizationId, userId])
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  REVOKED
+}
+
+model Invitation {
+  id             String           @id @default(cuid())
+  organizationId String
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  email          String
+  role           MemberRole       @default(MEMBER)
+  status         InvitationStatus @default(PENDING)
+  token          String           @unique
+  invitedById    String
+  invitedBy      User             @relation("InvitationsSent", fields: [invitedById], references: [id])
+  userId         String?
+  user           User?            @relation("InvitationRecipient", fields: [userId], references: [id])
+  expiresAt      DateTime
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  @@index([organizationId, email])
+  @@index([status])
 }

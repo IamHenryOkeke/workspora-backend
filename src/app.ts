@@ -16,7 +16,10 @@ app.use("/api/v1/auth", routes.authRouter);
 app.use("/api/v1/users", routes.userRouter);
 app.use("/api/v1/organizations", routes.organizationRouter);
 app.use("/api/v1/organizations/:organizationId/members", routes.memberRouter);
-// app.use("/api/v1/organizations/:organizationId/projects", routes.projectRouter);
+app.use(
+  "/api/v1/organizations/:organizationId/invitations",
+  routes.invitationRouter,
+);
 app.use("/api/v1", routes.indexRouter);
 
 app.use((_req, res) => {
