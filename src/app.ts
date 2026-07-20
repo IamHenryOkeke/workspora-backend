@@ -8,20 +8,20 @@ import passport from "./config/passport-config";
 const app = express();
 
 app.use(cors(corsOptions));
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(passport.initialize());
 
 app.use("/api/v1/auth", routes.authRouter);
 app.use("/api/v1/users", routes.userRouter);
 app.use("/api/v1/organizations", routes.organizationRouter);
+app.use("/api/v1/organizations/:organizationId/members", routes.memberRouter);
+// app.use("/api/v1/organizations/:organizationId/projects", routes.projectRouter);
 app.use("/api/v1", routes.indexRouter);
 
-app.use((_rreq, res) => {
+app.use((_req, res) => {
   res.status(404).json({
-    status: 404,
+    statusCode: 404,
     message: "The route you are looking for does not exist.",
   });
 });

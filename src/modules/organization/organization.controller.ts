@@ -26,14 +26,18 @@ export class OrganizationController {
   getOrganizations = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = req.user as User;
-      const data = await this.organizationService.getOrganizations(
-        user.id,
-        req.validatedQuery,
-      );
+      const { organizations, pagination } =
+        await this.organizationService.getOrganizations(
+          user.id,
+          req.validatedQuery,
+        );
 
       res.status(200).json({
         message: "Organizations fetched successfully",
-        data,
+        data: {
+          organizations,
+          pagination,
+        },
       });
     },
   );
