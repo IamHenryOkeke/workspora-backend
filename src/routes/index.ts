@@ -4,6 +4,7 @@ import userRouter from "./user.routes";
 import organizationRouter from "./organization.routes";
 import memberRouter from "./member.routes";
 import invitationRouter from "./invitation.routes";
+import invitationTokenRouter from "./invitationToken.routes";
 export {
   indexRouter,
   authRouter,
@@ -11,4 +12,5 @@ export {
   organizationRouter,
   memberRouter,
   invitationRouter,
+  invitationTokenRouter,
 };
