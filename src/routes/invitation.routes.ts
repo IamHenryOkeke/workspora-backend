@@ -27,4 +27,36 @@ invitationRouter.get(
   invitationController.getInvitations,
 );
 
+invitationRouter.get(
+  "/:invitationId",
+  validate({
+    params: InvitationSchema.invitationParamSchema,
+  }),
+  invitationController.getInvitation,
+);
+
+invitationRouter.post(
+  "/",
+  validate({
+    body: InvitationSchema.createInvitationSchema,
+  }),
+  invitationController.createInvitation,
+);
+
+invitationRouter.delete(
+  "/:invitationId",
+  validate({
+    params: InvitationSchema.invitationParamSchema,
+  }),
+  invitationController.revokeInvitation,
+);
+
+invitationRouter.post(
+  "/:invitationId/resend",
+  validate({
+    params: InvitationSchema.invitationParamSchema,
+  }),
+  invitationController.resendInvitationEmail,
+);
+
 export default invitationRouter;

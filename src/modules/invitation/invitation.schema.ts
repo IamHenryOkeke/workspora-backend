@@ -14,4 +14,16 @@ export class InvitationSchema {
       })
       .optional(),
   });
+
+  static invitationParamSchema = z.object({
+    organizationId: z.cuid({ error: "Invalid organization ID" }),
+    invitationId: z.cuid({ error: "Invalid invitation ID" }),
+  });
+
+  static createInvitationSchema = z.object({
+    email: z.string().email({ error: "Invalid email address" }),
+    role: z.enum(["ADMIN", "MEMBER"], {
+      error: "Please enter a valid role value",
+    }),
+  });
 }

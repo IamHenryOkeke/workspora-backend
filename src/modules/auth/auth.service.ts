@@ -8,6 +8,7 @@ import { queueConfig } from "../../utils/queue-config";
 import { signJWT } from "../../utils/jwt";
 import { prisma } from "../../lib/prisma";
 import { comparePassword, hashPassword } from "../../utils/password";
+import { generateToken } from "../../utils/token";
 
 const FRONTEND_URL = getEnv("FRONTEND_URL");
 
@@ -19,12 +20,6 @@ const TOKEN_EXPIRY = {
 export class AuthService {
   constructor(private authRepo: AuthRepository) {}
 
-  private generateToken() {
-    const raw = crypto.randomBytes(32).toString("hex");
-    const hashed = crypto.createHash("sha256").update(raw).digest("hex");
-    return { raw, hashed };
-  }
-
   private async issueVerificationToken(user: {
     id: string;
     email: string;
@@ -32,7 +27,7 @@ export class AuthService {
   }) {
     await this.authRepo.deleteTokens(user.id, TokenType.VERIFY_EMAIL);
 
-    const { raw, hashed } = this.generateToken();
+    const { raw, hashed } = generateToken();
 
     await this.authRepo.createToken({
       token: hashed,
@@ -212,7 +207,7 @@ export class AuthService {
       TokenType.RESET_PASSWORD,
     );
 
-    const { raw, hashed } = this.generateToken();
+    const { raw, hashed } = generateToken();
 
     const values = {
       token: hashed,
