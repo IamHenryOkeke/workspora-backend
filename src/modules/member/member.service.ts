@@ -36,19 +36,21 @@ export class MemberService {
   ) {
     await this.assertMembership(userId, organizationId);
 
-    const { page, limit, searchTerm } = query;
+    const { page, limit, searchTerm, role, status } = query;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.MemberWhereInput = searchTerm
-      ? {
-          OR: [
-            {
-              user: { fullName: { contains: searchTerm, mode: "insensitive" } },
-            },
-            { user: { email: { contains: searchTerm, mode: "insensitive" } } },
-          ],
-        }
-      : {};
+    const where: Prisma.MemberWhereInput = {
+      ...(searchTerm && {
+        OR: [
+          {
+            user: { fullName: { contains: searchTerm, mode: "insensitive" } },
+          },
+          { user: { email: { contains: searchTerm, mode: "insensitive" } } },
+        ],
+      }),
+      ...(role && { role }),
+      ...(status && { status }),
+    };
 
     const { members, total } = await this.memberRepo.getMembers(
       organizationId,
