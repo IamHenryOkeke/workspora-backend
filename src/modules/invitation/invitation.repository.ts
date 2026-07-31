@@ -80,6 +80,17 @@ export class InvitationRepository {
   ) {
     return await tx.invitation.findUnique({
       where: { token },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        status: true,
+        expiresAt: true,
+        organizationId: true,
+        token: true,
+        organization: { select: { id: true, name: true, logo: true } },
+        invitedBy: { select: { fullName: true } },
+      },
     });
   }
 

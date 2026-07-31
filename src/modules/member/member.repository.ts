@@ -19,6 +19,7 @@ const memberSelect = {
   role: true,
   status: true,
   createdAt: true,
+  deletedAt: true,
   user: {
     select: {
       id: true,
@@ -68,6 +69,16 @@ export class MemberRepository {
     });
   }
 
+  async createMember(
+    data: Prisma.MemberCreateInput,
+    tx: PrismaTransactionClient = prisma,
+  ) {
+    return await tx.member.create({
+      data,
+      select: memberSelect,
+    });
+  }
+
   async updateMember(
     id: string,
     organizationId: string,
@@ -77,6 +88,29 @@ export class MemberRepository {
     return await tx.member.update({
       where: { id, organizationId, deletedAt: null },
       data,
+      select: memberSelect,
+    });
+  }
+
+  async restoreMember(
+    id: string,
+    data: Prisma.MemberUpdateInput,
+    tx: PrismaTransactionClient = prisma,
+  ) {
+    return await tx.member.update({
+      where: { id },
+      data,
+      select: memberSelect,
+    });
+  }
+
+  async getMemberByOrgAndUser(
+    organizationId: string,
+    userId: string,
+    tx: PrismaTransactionClient = prisma,
+  ) {
+    return await tx.member.findFirst({
+      where: { organizationId, userId },
       select: memberSelect,
     });
   }

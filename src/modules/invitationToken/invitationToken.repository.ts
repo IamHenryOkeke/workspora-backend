@@ -1,15 +1,5 @@
-import {
-  InvitationStatus,
-  Prisma,
-  PrismaClient,
-} from "../../generated/prisma/client";
+import { Prisma, PrismaClient } from "../../generated/prisma/client";
 import { prisma } from "../../lib/prisma";
-
-type GetInvitationsArgs = {
-  where?: Prisma.InvitationWhereInput;
-  take?: number;
-  skip?: number;
-};
 
 export type PrismaTransactionClient = Omit<
   PrismaClient,
@@ -40,30 +30,8 @@ const invitationSelect = {
   },
 } satisfies Prisma.InvitationSelect;
 
-export class InvitationRepository {
-  async getInvitations(
-    organizationId: string,
-    { where, take, skip }: GetInvitationsArgs,
-    tx: PrismaTransactionClient = prisma,
-  ) {
-    const scopedWhere: Prisma.InvitationWhereInput = {
-      ...where,
-      organizationId,
-    };
-    const [invitations, total] = await Promise.all([
-      tx.invitation.findMany({
-        where: scopedWhere,
-        take,
-        skip,
-        orderBy: { createdAt: "desc" },
-        select: invitationSelect,
-      }),
-      tx.invitation.count({ where: scopedWhere }),
-    ]);
-    return { invitations, total };
-  }
-
-  async getInvitationById(
+export class InvitationTokenRepository {
+  async getUserInvitationById(
     id: string,
     organizationId: string,
     tx: PrismaTransactionClient = prisma,
@@ -94,24 +62,7 @@ export class InvitationRepository {
     });
   }
 
-  async getPendingInvitation(
-    organizationId: string,
-    email: string,
-    tx: PrismaTransactionClient = prisma,
-  ) {
-    return await tx.invitation.findFirst({
-      where: { organizationId, email, status: InvitationStatus.PENDING },
-    });
-  }
-
-  async createInvitation(
-    data: Prisma.InvitationCreateInput,
-    tx: PrismaTransactionClient = prisma,
-  ) {
-    return await tx.invitation.create({ data, select: invitationSelect });
-  }
-
-  async updateInvitation(
+  async updateUserInvitation(
     id: string,
     data: Prisma.InvitationUpdateInput,
     tx: PrismaTransactionClient = prisma,

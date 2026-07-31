@@ -77,6 +77,7 @@ export class OrganizationRepository {
       where: { organizationId, userId, deletedAt: null },
     });
   }
+
   async getOrganizationMemberByEmail(
     organizationId: string,
     email: string,
