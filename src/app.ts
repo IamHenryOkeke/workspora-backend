@@ -21,6 +21,7 @@ app.use(
   routes.invitationRouter,
 );
 app.use("/api/v1/invitations", routes.invitationTokenRouter);
+app.use("/api/v1/projects", routes.projectRouter);
 app.use("/api/v1", routes.indexRouter);
 
 app.use((_req, res) => {

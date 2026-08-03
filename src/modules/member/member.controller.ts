@@ -81,25 +81,4 @@ export class MemberController {
       });
     },
   );
-
-  // addMember = asyncHandler(
-  //   async (req: Request, res: Response): Promise<void> => {
-  //     const user = req.user as User;
-  //     const { organizationId } = req.params;
-
-  //     const {members, pagination} = await this.memberService.getMembers(
-  //       user.id,
-  //       organizationId as string,
-  //       req.validatedQuery,
-  //     );
-
-  //     res.status(200).json({
-  //       message: "Members fetched successfully",
-  //       data: {
-  //         members,
-  //         pagination
-  //       }
-  //     });
-  //   },
-  // );
 }
