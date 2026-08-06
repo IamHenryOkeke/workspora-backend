@@ -87,6 +87,15 @@ export class OrganizationRepository {
       where: { organizationId, user: { email }, deletedAt: null },
     });
   }
+  async getOrganizationMemberByMemberId(
+    organizationId: string,
+    memberId: string,
+    tx: PrismaTransactionClient = prisma,
+  ) {
+    return await tx.member.findFirst({
+      where: { organizationId, id: memberId, deletedAt: null },
+    });
+  }
   async getOrganizationMembers(
     organizationId: string,
     tx: PrismaTransactionClient = prisma,

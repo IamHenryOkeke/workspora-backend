@@ -78,6 +78,16 @@ export class ProjectRepository {
     });
   }
 
+  async getProjectByIdWithoutMembershipCheck(
+    id: string,
+    tx: PrismaTransactionClient = prisma,
+  ) {
+    return await tx.project.findFirst({
+      where: { id, deletedAt: null },
+      select: projectSelect,
+    });
+  }
+
   async createProject(
     data: Prisma.ProjectCreateInput,
     tx: PrismaTransactionClient = prisma,

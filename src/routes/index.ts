@@ -6,6 +6,7 @@ import memberRouter from "./member.routes";
 import invitationRouter from "./invitation.routes";
 import invitationTokenRouter from "./invitationToken.routes";
 import projectRouter from "./project.routes";
+import projectMemberRouter from "./projectMember.routes";
 export {
   indexRouter,
   authRouter,
@@ -15,4 +16,5 @@ export {
   invitationRouter,
   invitationTokenRouter,
   projectRouter,
+  projectMemberRouter,
 };

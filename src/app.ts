@@ -22,6 +22,7 @@ app.use(
 );
 app.use("/api/v1/invitations", routes.invitationTokenRouter);
 app.use("/api/v1/projects", routes.projectRouter);
+app.use("/api/v1/projects/:projectId/members", routes.projectMemberRouter);
 app.use("/api/v1", routes.indexRouter);
 
 app.use((_req, res) => {
