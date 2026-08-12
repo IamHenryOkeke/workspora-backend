@@ -28,7 +28,14 @@ export class AuthSchema {
       .min(3, { error: "Token must be at least 3 characters long" }),
   });
 
-  static loginUserSchema = this.createUserSchema.omit({ fullName: true });
+  static loginUserSchema = this.createUserSchema
+    .omit({
+      fullName: true,
+      password: true,
+    })
+    .extend({
+      password: z.string({ error: "Password is required" }),
+    });
 
   static sendVerificationLinkSchema = this.loginUserSchema.pick({
     email: true,

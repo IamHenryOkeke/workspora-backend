@@ -36,7 +36,7 @@ export class AuthService {
       type: TokenType.VERIFY_EMAIL,
     });
 
-    const verificationLink = `${FRONTEND_URL}/verify-account?token=${raw}`;
+    const verificationLink = `${FRONTEND_URL}/auth/verify-email?token=${raw}`;
 
     await emailQueue.add(
       "send-verification-email",
@@ -222,7 +222,7 @@ export class AuthService {
 
     await this.authRepo.createToken(values);
 
-    const verificationLink = `${FRONTEND_URL}/reset-password?token=${raw}`;
+    const verificationLink = `${FRONTEND_URL}/auth/reset-password?token=${raw}`;
 
     await emailQueue.add(
       "send-password-reset-email",

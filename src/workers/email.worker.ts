@@ -6,7 +6,6 @@ new Worker(
   "email-queue",
   async (job: Job) => {
     const { title, to, content } = job.data;
-
     await sendMail(title, to, content);
   },
   { connection: redis.options },

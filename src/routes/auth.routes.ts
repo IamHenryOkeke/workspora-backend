@@ -8,6 +8,7 @@ import { rateLimiter } from "../middleware/rate-limiter.middleware";
 import { signJWT } from "../utils/jwt";
 import { User } from "../generated/prisma/client";
 import passport from "passport";
+import { getEnv } from "../config/env";
 
 const authRouter = Router();
 
@@ -67,14 +68,22 @@ authRouter.get(
   passport.authenticate("google", { session: false }),
   (req, res) => {
     const user = req.user as User;
-
     const token = signJWT(user, 60 * 15);
 
-    res.status(200).json({
-      message: "Login successful",
+    const userPayload = {
+      id: user.id,
+      email: user.email,
+      name: user.fullName,
+      avatar: user.avatar,
+    };
+
+    const params = new URLSearchParams({
       token,
-      user,
+      user: JSON.stringify(userPayload),
     });
+
+    const redirectUrl = `${getEnv("FRONTEND_URL")}/auth/google/callback?${params.toString()}`;
+    res.redirect(redirectUrl);
   },
 );
 
