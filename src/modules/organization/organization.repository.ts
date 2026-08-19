@@ -38,15 +38,31 @@ export class OrganizationRepository {
           description: true,
           logo: true,
           ownerId: true,
-          createdAt: true,
+          members: {
+            where: { userId, deletedAt: null },
+            select: { role: true },
+            take: 1,
+          },
         },
       }),
       prisma.organization.count({ where: scopedWhere }),
     ]);
-    return { organizations, total };
+
+    // Flatten members[0].role into a top-level `role` field
+    const organizationsWithRole = organizations.map(({ members, ...org }) => ({
+      ...org,
+      role: members[0]?.role ?? null,
+    }));
+
+    return { organizations: organizationsWithRole, total };
   }
-  async getOrganizationById(id: string, tx: PrismaTransactionClient = prisma) {
-    return tx.organization.findUnique({
+
+  async getOrganizationById(
+    id: string,
+    userId: string,
+    tx: PrismaTransactionClient = prisma,
+  ) {
+    const organization = await tx.organization.findUnique({
       where: {
         id,
         deletedAt: null,
@@ -59,14 +75,49 @@ export class OrganizationRepository {
         logo: true,
         ownerId: true,
         createdAt: true,
+        members: {
+          where: { userId, deletedAt: null },
+          select: { role: true },
+          take: 1,
+        },
       },
     });
+
+    if (!organization) return null;
+
+    const { members, ...org } = organization;
+    return { ...org, role: members[0]?.role ?? null };
   }
   async getOrganizationBySlug(
     slug: string,
+    userId: string,
     tx: PrismaTransactionClient = prisma,
   ) {
-    return tx.organization.findUnique({ where: { slug, deletedAt: null } });
+    const organization = await tx.organization.findUnique({
+      where: {
+        slug,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        description: true,
+        logo: true,
+        ownerId: true,
+        createdAt: true,
+        members: {
+          where: { userId, deletedAt: null },
+          select: { role: true },
+          take: 1,
+        },
+      },
+    });
+
+    if (!organization) return null;
+
+    const { members, ...org } = organization;
+    return { ...org, role: members[0]?.role ?? null };
   }
   async getOrganizationMember(
     organizationId: string,

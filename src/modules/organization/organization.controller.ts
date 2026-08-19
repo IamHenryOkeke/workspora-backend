@@ -58,6 +58,22 @@ export class OrganizationController {
     });
   });
 
+  getOrganizationBySlug = asyncHandler(async (req, res) => {
+    const user = req.user as User;
+    const { organizationSlug } = req.params;
+    const organization = await this.organizationService.getOrganizationBySlug(
+      user.id,
+      organizationSlug as string,
+    );
+
+    res.status(200).json({
+      message: "Organization fetched successfully",
+      data: {
+        organization,
+      },
+    });
+  });
+
   getOrganizationStats = asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { organizationId } = req.params;

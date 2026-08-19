@@ -33,6 +33,14 @@ organizationRouter.get(
 );
 
 organizationRouter.get(
+  "/slug/:organizationSlug",
+  validate({
+    params: OrganizationSchema.organizationSlugParamSchema,
+  }),
+  organizationController.getOrganizationBySlug,
+);
+
+organizationRouter.get(
   "/:organizationId/stats",
   validate({
     params: OrganizationSchema.organizationParamSchema,

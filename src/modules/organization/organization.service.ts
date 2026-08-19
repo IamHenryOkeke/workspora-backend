@@ -48,8 +48,10 @@ export class OrganizationService {
   }
 
   async getOrganization(userId: string, organizationId: string) {
-    const organization =
-      await this.organizationRepo.getOrganizationById(organizationId);
+    const organization = await this.organizationRepo.getOrganizationById(
+      organizationId,
+      userId,
+    );
     if (!organization) throw new AppError("Organization not found.", 404);
 
     const membership = await this.organizationRepo.getOrganizationMember(
@@ -61,9 +63,27 @@ export class OrganizationService {
     return organization;
   }
 
+  async getOrganizationBySlug(userId: string, organizationSlug: string) {
+    const organization = await this.organizationRepo.getOrganizationBySlug(
+      organizationSlug,
+      userId,
+    );
+    if (!organization) throw new AppError("Organization not found.", 404);
+
+    const membership = await this.organizationRepo.getOrganizationMember(
+      organization.id,
+      userId,
+    );
+    if (!membership) throw new AppError("Organization not found.", 404);
+
+    return organization;
+  }
+
   async getOrganizationStats(userId: string, organizationId: string) {
-    const organization =
-      await this.organizationRepo.getOrganizationById(organizationId);
+    const organization = await this.organizationRepo.getOrganizationById(
+      organizationId,
+      userId,
+    );
     if (!organization) throw new AppError("Organization not found.", 404);
 
     const membership = await this.organizationRepo.getOrganizationMember(
@@ -94,6 +114,7 @@ export class OrganizationService {
     const organization = await prisma.$transaction(async (tx) => {
       const existingOrg = await this.organizationRepo.getOrganizationBySlug(
         slug,
+        userId,
         tx,
       );
       if (existingOrg)
@@ -127,8 +148,10 @@ export class OrganizationService {
     organizationId: string,
     data: z.infer<typeof OrganizationSchema.updateOrganizationSchema>,
   ) {
-    const organization =
-      await this.organizationRepo.getOrganizationById(organizationId);
+    const organization = await this.organizationRepo.getOrganizationById(
+      organizationId,
+      userId,
+    );
     if (!organization) throw new AppError("Organization not found.", 404);
 
     const membership = await this.organizationRepo.getOrganizationMember(
@@ -150,8 +173,10 @@ export class OrganizationService {
   }
 
   async deleteOrganization(userId: string, organizationId: string) {
-    const organization =
-      await this.organizationRepo.getOrganizationById(organizationId);
+    const organization = await this.organizationRepo.getOrganizationById(
+      organizationId,
+      userId,
+    );
     if (!organization) throw new AppError("Organization not found.", 404);
 
     const membership = await this.organizationRepo.getOrganizationMember(

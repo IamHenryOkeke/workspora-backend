@@ -24,5 +24,9 @@ export class OrganizationSchema {
     organizationId: z.cuid({ error: "Invalid organization ID" }),
   });
 
+  static organizationSlugParamSchema = z.object({
+    organizationSlug: z.string({ error: "Organization slug is required" }),
+  });
+
   static querySchema = CommonSchema.paginationQuerySchema;
 }

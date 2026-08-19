@@ -13,9 +13,10 @@ import { generateToken } from "../../utils/token";
 const FRONTEND_URL = getEnv("FRONTEND_URL");
 
 const TOKEN_EXPIRY = {
+  // the first are in milliseconds (database write), the last one is in seconds(jwt signin)
   VERIFY_EMAIL: 10 * 60 * 1000,
   RESET_PASSWORD: 5 * 60 * 1000,
-  ACCESS_TOKEN: 60 * 60,
+  ACCESS_TOKEN: 15 * 60,
 };
 export class AuthService {
   constructor(private authRepo: AuthRepository) {}
