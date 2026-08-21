@@ -205,7 +205,13 @@ export class OrganizationRepository {
     organizationId: string,
     tx: PrismaTransactionClient = prisma,
   ) {
-    const [totalMembers, byRole, byStatus] = await Promise.all([
+    const [
+      totalMembers,
+      membersByRole,
+      membersByStatus,
+      totalProjects,
+      projectsByStatus,
+    ] = await Promise.all([
       tx.member.count({ where: { organizationId, deletedAt: null } }),
       tx.member.groupBy({
         by: ["role"],
@@ -217,8 +223,21 @@ export class OrganizationRepository {
         where: { organizationId, deletedAt: null },
         _count: true,
       }),
+      tx.project.count({ where: { organizationId, deletedAt: null } }),
+      tx.project.groupBy({
+        by: ["status"],
+        where: { organizationId, deletedAt: null },
+        _count: true,
+      }),
     ]);
-    return { totalMembers, byRole, byStatus };
+
+    return {
+      totalMembers,
+      membersByRole,
+      membersByStatus,
+      totalProjects,
+      projectsByStatus,
+    };
   }
   async addMemberToOrganization(
     organizationId: string,
