@@ -9,13 +9,14 @@ import { signJWT, verifyJWT } from "../../utils/jwt";
 import { prisma } from "../../lib/prisma";
 import { comparePassword, hashPassword } from "../../utils/password";
 import { generateToken, hashToken } from "../../utils/token";
+import { User } from "../../generated/prisma/client";
 
 const FRONTEND_URL = getEnv("FRONTEND_URL");
 
 const TOKEN_EXPIRY = {
   VERIFY_EMAIL: 10 * 60 * 1000,
   RESET_PASSWORD: 5 * 60 * 1000,
-  ACCESS_TOKEN: 1 * 20,
+  ACCESS_TOKEN: 15 * 60,
   REFRESH_TOKEN: 7 * 24 * 60 * 60,
 };
 export class AuthService {
@@ -123,7 +124,7 @@ export class AuthService {
     return { message: "Account verification successful." };
   }
 
-  async logIn(data: { email: string; password: string }) {
+  async login(data: { email: string; password: string }) {
     const { email, password } = data;
     const isExistingUser = await this.authRepo.getUserByEmail(
       email.toLowerCase(),
@@ -193,6 +194,11 @@ export class AuthService {
       accessToken,
       refreshToken,
     };
+  }
+
+  async logout(user: User) {
+    await this.authRepo.deleteTokens(user.id, TokenType.REFRESH);
+    return { message: "Logout successful" };
   }
 
   async refreshAccessToken(refreshToken: string) {

@@ -18,15 +18,13 @@ export class MemberService {
   ) {}
 
   private async assertMembership(userId: string, organizationId: string) {
-    const organization =
-      await this.organizationRepo.getOrganizationById(organizationId);
-    if (!organization) throw new AppError("Organization not found.", 404);
-
-    const membership = await this.organizationRepo.getOrganizationMember(
+    const organization = await this.organizationRepo.getOrganizationById(
       organizationId,
       userId,
     );
-    if (!membership) throw new AppError("Organization not found.", 404);
+    if (!organization) throw new AppError("Organization not found.", 404);
+
+    if (!organization.role) throw new AppError("Organization not found.", 404);
   }
 
   async getMembers(

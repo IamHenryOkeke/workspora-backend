@@ -9,6 +9,7 @@ import { signJWT } from "../utils/jwt";
 import { User } from "../generated/prisma/client";
 import passport from "passport";
 import { getEnv } from "../config/env";
+import { isAuthenticated } from "../middleware/auth.middleware";
 
 const authRouter = Router();
 
@@ -35,10 +36,12 @@ authRouter.get(
 
 authRouter.post(
   "/login",
-  // rateLimiter(5),
+  rateLimiter(5),
   validate({ body: AuthSchema.loginUserSchema }),
-  authController.logIn,
+  authController.login,
 );
+
+authRouter.post("/logout", isAuthenticated, authController.logout);
 
 authRouter.post("/refresh", authController.refreshAccessToken);
 

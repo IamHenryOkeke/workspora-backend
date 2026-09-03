@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { AuthService } from "./auth.service";
 import { asyncHandler } from "../../utils/asyncHandler";
+import { User } from "../../generated/prisma/client";
 
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -21,8 +22,8 @@ export class AuthController {
     },
   );
 
-  logIn = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const { refreshToken, ...payload } = await this.authService.logIn(req.body);
+  login = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const { refreshToken, ...payload } = await this.authService.login(req.body);
 
     res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
@@ -32,6 +33,14 @@ export class AuthController {
     });
 
     res.status(200).json(payload);
+  });
+
+  logout = asyncHandler(async (req: Request, res: Response): Promise<void> => {
+    const user = req.user as User;
+
+    const result = await this.authService.logout(user);
+
+    res.status(200).json(result);
   });
 
   refreshAccessToken = asyncHandler(
