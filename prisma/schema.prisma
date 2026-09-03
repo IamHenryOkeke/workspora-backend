@@ -40,10 +40,10 @@ enum TokenType {
 
 model Token {
   id        String    @id @default(cuid())
+  type      TokenType
+  tokenHash String    @unique
   userId    String
   user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  type      TokenType
-  token     String    @unique
   expiresAt DateTime
   createdAt DateTime  @default(now())
 

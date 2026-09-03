@@ -35,10 +35,12 @@ authRouter.get(
 
 authRouter.post(
   "/login",
-  rateLimiter(5),
+  // rateLimiter(5),
   validate({ body: AuthSchema.loginUserSchema }),
   authController.logIn,
 );
+
+authRouter.post("/refresh", authController.refreshAccessToken);
 
 authRouter.post(
   "/request-verification-link",
@@ -68,7 +70,7 @@ authRouter.get(
   passport.authenticate("google", { session: false }),
   (req, res) => {
     const user = req.user as User;
-    const token = signJWT(user, 60 * 15);
+    const token = signJWT(user, "access", 60 * 15);
 
     const userPayload = {
       id: user.id,

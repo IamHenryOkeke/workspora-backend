@@ -45,13 +45,13 @@ export class AuthRepository {
     return await tx.token.create({ data });
   }
   async getToken(
-    token: string,
+    tokenHash: string,
     type: TokenType,
     tx: PrismaTransactionClient = prisma,
   ) {
     return await tx.token.findFirst({
       where: {
-        token,
+        tokenHash,
         type,
         expiresAt: { gt: new Date() },
         user: { deletedAt: null },

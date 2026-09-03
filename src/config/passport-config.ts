@@ -13,7 +13,7 @@ const authRepo = new AuthRepository();
 
 const opts: StrategyOptions = {
   jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
-  secretOrKey: getEnv("JWT_SECRET"),
+  secretOrKey: getEnv("ACCESS_TOKEN_SECRET"),
 };
 
 const toUserData = (user: {

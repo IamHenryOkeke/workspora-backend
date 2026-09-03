@@ -42,7 +42,8 @@ npm run dev
 ```
 DATABASE_URL=          # PostgreSQL connection string
 REDIS_URL=             # Redis connection for BullMQ
-JWT_SECRET=            # Secret for signing tokens
+ACCESS_TOKEN_SECRET=   # Secret for access signing tokens
+REFRESH_TOKEN_SECRET=  # Secret for refresh signing tokens
 GOOGLE_CLIENT_ID=      # Google OAuth
 GOOGLE_CLIENT_SECRET=  # Google OAuth
 ```

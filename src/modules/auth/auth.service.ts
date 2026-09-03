@@ -5,18 +5,18 @@ import { AuthRepository } from "./auth.repository";
 import crypto from "crypto";
 import { emailQueue } from "../../queues/email.queue";
 import { queueConfig } from "../../utils/queue-config";
-import { signJWT } from "../../utils/jwt";
+import { signJWT, verifyJWT } from "../../utils/jwt";
 import { prisma } from "../../lib/prisma";
 import { comparePassword, hashPassword } from "../../utils/password";
-import { generateToken } from "../../utils/token";
+import { generateToken, hashToken } from "../../utils/token";
 
 const FRONTEND_URL = getEnv("FRONTEND_URL");
 
 const TOKEN_EXPIRY = {
-  // the first are in milliseconds (database write), the last one is in seconds(jwt signin)
   VERIFY_EMAIL: 10 * 60 * 1000,
   RESET_PASSWORD: 5 * 60 * 1000,
-  ACCESS_TOKEN: 15 * 60,
+  ACCESS_TOKEN: 1 * 20,
+  REFRESH_TOKEN: 7 * 24 * 60 * 60,
 };
 export class AuthService {
   constructor(private authRepo: AuthRepository) {}
@@ -31,7 +31,7 @@ export class AuthService {
     const { raw, hashed } = generateToken();
 
     await this.authRepo.createToken({
-      token: hashed,
+      tokenHash: hashed,
       expiresAt: new Date(Date.now() + TOKEN_EXPIRY.VERIFY_EMAIL),
       user: { connect: { id: user.id } },
       type: TokenType.VERIFY_EMAIL,
@@ -161,12 +161,80 @@ export class AuthService {
       avatar: isExistingUser.avatar,
     };
 
-    const token = signJWT(user, TOKEN_EXPIRY.ACCESS_TOKEN);
+    const accessToken = signJWT(user, "access", TOKEN_EXPIRY.ACCESS_TOKEN);
+    const refreshToken = signJWT(user, "refresh", TOKEN_EXPIRY.REFRESH_TOKEN);
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        await this.authRepo.deleteTokens(
+          isExistingUser.id,
+          TokenType.REFRESH,
+          tx,
+        );
+
+        await this.authRepo.createToken(
+          {
+            tokenHash: hashToken(refreshToken),
+            expiresAt: new Date(Date.now() + TOKEN_EXPIRY.REFRESH_TOKEN * 1000),
+            user: { connect: { id: isExistingUser.id } },
+            type: TokenType.REFRESH,
+          },
+          tx,
+        );
+      });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      throw new AppError("Failed to reset password. Please try again.", 500);
+    }
 
     return {
       message: "Login successful",
       user,
-      token,
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  async refreshAccessToken(refreshToken: string) {
+    if (!refreshToken) throw new AppError("Refresh token required", 401);
+
+    const payload = verifyJWT(refreshToken, "refresh") as {
+      id: string;
+      fullName: string;
+      email: string;
+      avatar: string | null | undefined;
+    };
+
+    const user = {
+      id: payload.id,
+      fullName: payload.fullName,
+      email: payload.email,
+      avatar: payload.avatar,
+    };
+
+    const tokenHash = hashToken(refreshToken);
+
+    const existingToken = await this.authRepo.getToken(
+      tokenHash,
+      TokenType.REFRESH,
+    );
+
+    if (!existingToken)
+      throw new AppError("Refresh token is invalid or has expired.", 401);
+
+    if (existingToken.expiresAt < new Date()) {
+      this.authRepo.deleteTokens(existingToken.userId, TokenType.REFRESH);
+      throw new AppError(
+        "Refresh token has expired. Please log in again.",
+        401,
+      );
+    }
+
+    const accessToken = signJWT(user, "access", TOKEN_EXPIRY.ACCESS_TOKEN);
+
+    return {
+      message: "Access token refreshed successfully",
+      accessToken,
     };
   }
 
@@ -211,7 +279,7 @@ export class AuthService {
     const { raw, hashed } = generateToken();
 
     const values = {
-      token: hashed,
+      tokenHash: hashed,
       expiresAt: new Date(Date.now() + TOKEN_EXPIRY.RESET_PASSWORD),
       user: {
         connect: {
@@ -251,7 +319,7 @@ export class AuthService {
   async resetPassword(data: { token: string; password: string }) {
     const { token, password } = data;
 
-    const hashedToken = crypto.createHash("sha256").update(token).digest("hex");
+    const hashedToken = hashToken(token);
 
     const existingToken = await this.authRepo.getToken(
       hashedToken,

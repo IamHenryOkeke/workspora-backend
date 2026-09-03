@@ -5,3 +5,7 @@ export const generateToken = () => {
   const hashed = crypto.createHash("sha256").update(raw).digest("hex");
   return { raw, hashed };
 };
+
+export const hashToken = (token: string): string => {
+  return crypto.createHash("sha256").update(token).digest("hex");
+};
