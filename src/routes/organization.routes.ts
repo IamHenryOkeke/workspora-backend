@@ -48,6 +48,14 @@ organizationRouter.get(
   organizationController.getOrganizationStats,
 );
 
+organizationRouter.get(
+  "/:organizationId/recent-activities",
+  validate({
+    params: OrganizationSchema.organizationParamSchema,
+  }),
+  organizationController.getOrganizationRecentActivities,
+);
+
 organizationRouter.post(
   "/",
   handleUpload("logo"),

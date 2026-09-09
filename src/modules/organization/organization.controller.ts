@@ -90,6 +90,23 @@ export class OrganizationController {
     });
   });
 
+  getOrganizationRecentActivities = asyncHandler(async (req, res) => {
+    const user = req.user as User;
+    const { organizationId } = req.params;
+    const activities =
+      await this.organizationService.getOrganizationRecentActivities(
+        user.id,
+        organizationId as string,
+      );
+
+    res.status(200).json({
+      message: "Organization recent activity fetched successfully",
+      data: {
+        activities,
+      },
+    });
+  });
+
   updateOrganization = asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { organizationId } = req.params;

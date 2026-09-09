@@ -207,12 +207,18 @@ export class OrganizationRepository {
   ) {
     const [
       totalMembers,
+      activeMembers,
       membersByRole,
       membersByStatus,
       totalProjects,
+      activeProjects,
       projectsByStatus,
+      pendingInvitations,
     ] = await Promise.all([
       tx.member.count({ where: { organizationId, deletedAt: null } }),
+      tx.member.count({
+        where: { organizationId, deletedAt: null, status: "ACTIVE" },
+      }),
       tx.member.groupBy({
         by: ["role"],
         where: { organizationId, deletedAt: null },
@@ -224,19 +230,28 @@ export class OrganizationRepository {
         _count: true,
       }),
       tx.project.count({ where: { organizationId, deletedAt: null } }),
+      tx.project.count({
+        where: { organizationId, deletedAt: null, status: "ACTIVE" },
+      }),
       tx.project.groupBy({
         by: ["status"],
         where: { organizationId, deletedAt: null },
         _count: true,
       }),
+      tx.invitation.count({
+        where: { organizationId, status: "PENDING" },
+      }),
     ]);
 
     return {
       totalMembers,
+      activeMembers,
       membersByRole,
       membersByStatus,
       totalProjects,
+      activeProjects,
       projectsByStatus,
+      pendingInvitations,
     };
   }
   async addMemberToOrganization(
