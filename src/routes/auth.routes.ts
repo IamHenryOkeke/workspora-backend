@@ -5,10 +5,7 @@ import { AuthRepository } from "../modules/auth/auth.repository";
 import { AuthService } from "../modules/auth/auth.service";
 import { AuthController } from "../modules/auth/auth.controller";
 import { rateLimiter } from "../middleware/rate-limiter.middleware";
-import { signJWT } from "../utils/jwt";
-import { User } from "../generated/prisma/client";
 import passport from "passport";
-import { getEnv } from "../config/env";
 import { isAuthenticated } from "../middleware/auth.middleware";
 
 const authRouter = Router();
@@ -71,25 +68,7 @@ authRouter.get(
 authRouter.get(
   "/google/callback",
   passport.authenticate("google", { session: false }),
-  (req, res) => {
-    const user = req.user as User;
-    const token = signJWT(user, "access", 60 * 15);
-
-    const userPayload = {
-      id: user.id,
-      email: user.email,
-      name: user.fullName,
-      avatar: user.avatar,
-    };
-
-    const params = new URLSearchParams({
-      token,
-      user: JSON.stringify(userPayload),
-    });
-
-    const redirectUrl = `${getEnv("FRONTEND_URL")}/auth/google/callback?${params.toString()}`;
-    res.redirect(redirectUrl);
-  },
+  authController.googleAuthCallback,
 );
 
 export default authRouter;

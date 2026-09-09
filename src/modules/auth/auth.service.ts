@@ -360,4 +360,35 @@ export class AuthService {
 
     return { message: "Password reset successful." };
   }
+
+  async googleAuthCallback(user: User) {
+    const accessToken = signJWT(user, "access", TOKEN_EXPIRY.ACCESS_TOKEN);
+    const refreshToken = signJWT(user, "refresh", TOKEN_EXPIRY.REFRESH_TOKEN);
+
+    try {
+      await prisma.$transaction(async (tx) => {
+        await this.authRepo.deleteTokens(user.id, TokenType.REFRESH, tx);
+
+        await this.authRepo.createToken(
+          {
+            tokenHash: hashToken(refreshToken),
+            expiresAt: new Date(Date.now() + TOKEN_EXPIRY.REFRESH_TOKEN * 1000),
+            user: { connect: { id: user.id } },
+            type: TokenType.REFRESH,
+          },
+          tx,
+        );
+      });
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      throw new AppError("Failed to reset password. Please try again.", 500);
+    }
+
+    return {
+      message: "Login with google successful",
+      user,
+      accessToken,
+      refreshToken,
+    };
+  }
 }

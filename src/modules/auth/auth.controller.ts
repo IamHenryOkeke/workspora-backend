@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { AuthService } from "./auth.service";
 import { asyncHandler } from "../../utils/asyncHandler";
 import { User } from "../../generated/prisma/client";
+import { getEnv } from "../../config/env";
 
 export class AuthController {
   constructor(private authService: AuthService) {}
@@ -80,6 +81,33 @@ export class AuthController {
       const result = await this.authService.resetPassword(req.body);
 
       res.status(200).json(result);
+    },
+  );
+
+  googleAuthCallback = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const user = req.user as User;
+
+      const {
+        refreshToken,
+        user: userPayload,
+        accessToken,
+      } = await this.authService.googleAuthCallback(user);
+
+      const params = new URLSearchParams({
+        accessToken,
+        user: JSON.stringify(userPayload),
+      });
+
+      res.cookie("refreshToken", refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      const redirectUrl = `${getEnv("FRONTEND_URL")}/auth/google/callback?${params.toString()}`;
+      res.redirect(redirectUrl);
     },
   );
 }
