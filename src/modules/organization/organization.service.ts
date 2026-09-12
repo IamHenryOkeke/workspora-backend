@@ -178,7 +178,7 @@ export class OrganizationService {
         type: "project_created",
         id: `project-${p.id}`,
         timestamp: p.createdAt,
-        text: `${p.creator?.fullName ?? "Someone"} created "${p.name}"`,
+        text: `${p.creator?.fullName ?? "Someone"} created "${p.name}" project`,
         meta: { status: p.status },
       })),
     ];

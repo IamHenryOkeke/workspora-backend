@@ -12,8 +12,10 @@ export class ProjectService {
   ) {}
 
   private async assertMembership(userId: string, organizationId: string) {
-    const organization =
-      await this.organizationRepo.getOrganizationById(organizationId);
+    const organization = await this.organizationRepo.getOrganizationById(
+      organizationId,
+      userId,
+    );
     if (!organization) throw new AppError("Organization not found.", 404);
 
     const membership = await this.organizationRepo.getOrganizationMember(
