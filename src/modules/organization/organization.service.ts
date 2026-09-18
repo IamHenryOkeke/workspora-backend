@@ -84,11 +84,7 @@ export class OrganizationService {
     );
     if (!organization) throw new AppError("Organization not found.", 404);
 
-    const membership = await this.organizationRepo.getOrganizationMember(
-      organization.id,
-      userId,
-    );
-    if (!membership) throw new AppError("Organization not found.", 404);
+    await this.assertMembership(userId, organization.id);
 
     return organization;
   }
@@ -96,17 +92,11 @@ export class OrganizationService {
   async getOrganizationStats(userId: string, organizationId: string) {
     const { membership } = await this.assertMembership(userId, organizationId);
 
-    const canViewStats =
-      membership.role === MemberRole.OWNER ||
-      membership.role === MemberRole.ADMIN;
-    if (!canViewStats)
-      throw new AppError(
-        "You don't have permission to view this organization stats.",
-        403,
-      );
+    const stats = await this.organizationRepo.getOrganizationStats(
+      organizationId,
+      membership.role,
+    );
 
-    const stats =
-      await this.organizationRepo.getOrganizationStats(organizationId);
     return stats;
   }
 

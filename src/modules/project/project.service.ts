@@ -33,7 +33,6 @@ export class ProjectService {
     const { status, searchTerm, page, limit, organizationId } = query;
 
     const member = await this.assertMembership(userId, organizationId);
-
     const skip = (page - 1) * limit;
 
     const where: Prisma.ProjectWhereInput = {
@@ -47,7 +46,7 @@ export class ProjectService {
       ...(member.role === "MEMBER"
         ? {
             deletedAt: null,
-            members: {
+            projectMembers: {
               some: { memberId: member.id, deletedAt: null },
             },
           }
@@ -111,6 +110,11 @@ export class ProjectService {
       description: data.description,
       organization: { connect: { id: data.organizationId } },
       creator: { connect: { id: userId } },
+      projectMembers: {
+        create: {
+          memberId: member.id,
+        },
+      },
     };
 
     const project = await this.projectRepo.createProject(projectData);

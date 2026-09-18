@@ -203,57 +203,74 @@ export class OrganizationRepository {
   }
   async getOrganizationStats(
     organizationId: string,
+    role: MemberRole,
     tx: PrismaTransactionClient = prisma,
   ) {
+    const isManager = role === "OWNER" || role === "ADMIN";
+
     const [
       totalMembers,
       activeMembers,
-      membersByRole,
-      membersByStatus,
+      // membersByRole,
       totalProjects,
       activeProjects,
-      projectsByStatus,
-      pendingInvitations,
+      // projectsByStatus,
+      adminStats,
     ] = await Promise.all([
       tx.member.count({ where: { organizationId, deletedAt: null } }),
       tx.member.count({
         where: { organizationId, deletedAt: null, status: "ACTIVE" },
       }),
-      tx.member.groupBy({
-        by: ["role"],
-        where: { organizationId, deletedAt: null },
-        _count: true,
-      }),
-      tx.member.groupBy({
-        by: ["status"],
-        where: { organizationId, deletedAt: null },
-        _count: true,
-      }),
+      // tx.member.groupBy({
+      //   by: ["role"],
+      //   where: { organizationId, deletedAt: null },
+      //   _count: true,
+      // }),
       tx.project.count({ where: { organizationId, deletedAt: null } }),
       tx.project.count({
         where: { organizationId, deletedAt: null, status: "ACTIVE" },
       }),
-      tx.project.groupBy({
-        by: ["status"],
-        where: { organizationId, deletedAt: null },
-        _count: true,
-      }),
-      tx.invitation.count({
-        where: { organizationId, status: "PENDING" },
-      }),
+      // tx.project.groupBy({
+      //   by: ["status"],
+      //   where: { organizationId, deletedAt: null },
+      //   _count: true,
+      // }),
+      isManager
+        ? Promise.all([
+            // tx.member.groupBy({
+            //   by: ["status"],
+            //   where: { organizationId, deletedAt: null },
+            //   _count: true,
+            // }),
+            tx.invitation.count({
+              where: { organizationId, status: "PENDING" },
+            }),
+          ])
+        : Promise.resolve(null),
     ]);
+
+    const [
+      // membersByStatus,
+      pendingInvitations,
+    ] = adminStats ?? [
+      // undefined,
+      undefined,
+    ];
 
     return {
       totalMembers,
       activeMembers,
-      membersByRole,
-      membersByStatus,
+      // membersByRole,
       totalProjects,
       activeProjects,
-      projectsByStatus,
-      pendingInvitations,
+      // projectsByStatus,
+      ...(isManager && {
+        // membersByStatus,
+        pendingInvitations,
+      }),
     };
   }
+
   async addMemberToOrganization(
     organizationId: string,
     userId: string,

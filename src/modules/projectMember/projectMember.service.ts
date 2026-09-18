@@ -12,7 +12,7 @@ export class ProjectMemberService {
     private organizationRepo: OrganizationRepository,
   ) {}
 
-  private async getProjectOrganization(projectId: string) {
+  private async getProjectOrganization(projectId: string, userId: string) {
     const project =
       await this.projectRepo.getProjectByIdWithoutMembershipCheck(projectId);
     if (!project) {
@@ -20,6 +20,7 @@ export class ProjectMemberService {
     }
     const organization = await this.organizationRepo.getOrganizationById(
       project.organizationId,
+      userId,
     );
     if (!organization) throw new AppError("Project not found", 404);
 
@@ -31,7 +32,7 @@ export class ProjectMemberService {
     projectId: string,
     query: z.infer<typeof ProjectMemberSchema.querySchema>,
   ) {
-    const organization = await this.getProjectOrganization(projectId);
+    const organization = await this.getProjectOrganization(projectId, userId);
 
     const membership = await this.organizationRepo.getOrganizationMember(
       organization.id,
@@ -64,7 +65,7 @@ export class ProjectMemberService {
     projectId: string,
     data: z.infer<typeof ProjectMemberSchema.createProjectMemberSchema>,
   ) {
-    const organization = await this.getProjectOrganization(projectId);
+    const organization = await this.getProjectOrganization(projectId, userId);
     const { memberId } = data;
 
     const callerMembership = await this.organizationRepo.getOrganizationMember(
@@ -113,7 +114,7 @@ export class ProjectMemberService {
     projectId: string,
     memberId: string,
   ) {
-    const organization = await this.getProjectOrganization(projectId);
+    const organization = await this.getProjectOrganization(projectId, userId);
 
     const callerMembership = await this.organizationRepo.getOrganizationMember(
       organization.id,
