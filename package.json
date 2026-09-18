@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
     "worker:dev": "ts-node-dev --respawn --transpile-only src/workers/email.worker.ts",
+    "dev:all": "concurrently \"npm run dev\" \"npm run worker:dev\"",
     "build": "tsc",
     "start": "node dist/server.js",
     "lint": "eslint .",
@@ -41,6 +42,7 @@
     "passport-google-oauth20": "^2.0.0",
     "passport-jwt": "^4.0.1",
     "rate-limit-redis": "^4.3.1",
+    "redis": "^6.2.1",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -58,6 +60,7 @@
     "@types/passport": "^1.0.17",
     "@types/passport-google-oauth20": "^2.0.17",
     "@types/passport-jwt": "^4.0.1",
+    "concurrently": "^10.0.5",
     "eslint": "^10.1.0",
     "globals": "^17.4.0",
     "husky": "^9.1.7",
