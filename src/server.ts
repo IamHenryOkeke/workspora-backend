@@ -1,8 +1,20 @@
 import app from "./app";
 import { getEnv } from "./config/env";
+import { redis } from "./lib/redis";
 
-const PORT = getEnv("PORT") || 5001;
+const PORT = getEnv("PORT") || 3000;
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
-});
+const startServer = async () => {
+  try {
+    await redis.connect();
+
+    app.listen(PORT, () => {
+      console.log(`🚀 Server running on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error("❌ Failed to start server", error);
+    process.exit(1);
+  }
+};
+
+startServer();
