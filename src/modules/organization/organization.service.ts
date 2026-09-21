@@ -82,9 +82,7 @@ export class OrganizationService {
       organizationSlug,
       userId,
     );
-    if (!organization) throw new AppError("Organization not found.", 404);
-
-    await this.assertMembership(userId, organization.id);
+    if (organization) await this.assertMembership(userId, organization.id);
 
     return organization;
   }

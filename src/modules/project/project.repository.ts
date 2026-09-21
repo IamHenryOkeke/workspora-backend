@@ -32,6 +32,20 @@ const projectSelect = {
       avatar: true,
     },
   },
+  projectMembers: {
+    select: {
+      member: {
+        select: {
+          user: {
+            select: {
+              id: true,
+              fullName: true,
+            },
+          },
+        },
+      },
+    },
+  },
 } satisfies Prisma.ProjectSelect;
 
 export class ProjectRepository {
