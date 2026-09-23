@@ -59,6 +59,18 @@ export class AuthRepository {
       include: { user: true },
     });
   }
+  async deleteTokenByTokenHash(
+    tokenHash: string,
+    type: TokenType,
+    tx: PrismaTransactionClient = prisma,
+  ) {
+    return await tx.token.delete({
+      where: {
+        tokenHash,
+        type,
+      },
+    });
+  }
   async deleteTokens(
     userId: string,
     type: TokenType,

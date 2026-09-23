@@ -6,7 +6,6 @@ import { AuthService } from "../modules/auth/auth.service";
 import { AuthController } from "../modules/auth/auth.controller";
 import { rateLimiter } from "../middleware/rate-limiter.middleware";
 import passport from "passport";
-import { isAuthenticated } from "../middleware/auth.middleware";
 
 const authRouter = Router();
 
@@ -38,7 +37,7 @@ authRouter.post(
   authController.login,
 );
 
-authRouter.post("/logout", isAuthenticated, authController.logout);
+authRouter.post("/logout", authController.logout);
 
 authRouter.post("/refresh", authController.refreshAccessToken);
 

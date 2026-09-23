@@ -36,12 +36,9 @@ export class AuthController {
     res.status(200).json(payload);
   });
 
-  logout = asyncHandler(async (req: Request, res: Response): Promise<void> => {
-    const user = req.user as User;
-
-    const result = await this.authService.logout(user);
-
-    res.status(200).json(result);
+  logout = asyncHandler(async (_req: Request, res: Response): Promise<void> => {
+    res.clearCookie("refreshToken");
+    res.status(200).json({ message: "Logout successful" });
   });
 
   refreshAccessToken = asyncHandler(

@@ -196,11 +196,6 @@ export class AuthService {
     };
   }
 
-  async logout(user: User) {
-    await this.authRepo.deleteTokens(user.id, TokenType.REFRESH);
-    return { message: "Logout successful" };
-  }
-
   async refreshAccessToken(refreshToken: string) {
     if (!refreshToken) throw new AppError("Refresh token required", 401);
 
@@ -225,8 +220,7 @@ export class AuthService {
       TokenType.REFRESH,
     );
 
-    if (!existingToken)
-      throw new AppError("Refresh token is invalid or has expired.", 401);
+    if (!existingToken) throw new AppError("Refresh token is invalid", 401);
 
     if (existingToken.expiresAt < new Date()) {
       this.authRepo.deleteTokens(existingToken.userId, TokenType.REFRESH);
