@@ -1,11 +1,11 @@
 import { Prisma, PrismaClient } from "../../generated/prisma/client";
 import { prisma } from "../../lib/prisma";
 
-type GetProjectMembersArgs = {
-  where?: Prisma.ProjectMemberWhereInput;
-  take?: number;
-  skip?: number;
-};
+// type GetProjectMembersArgs = {
+//   where?: Prisma.ProjectMemberWhereInput;
+//   take?: number;
+//   skip?: number;
+// };
 
 export type PrismaTransactionClient = Omit<
   PrismaClient,
@@ -15,7 +15,6 @@ export type PrismaTransactionClient = Omit<
 const projectMemberSelect = {
   id: true,
   projectId: true,
-  memberId: true,
   createdAt: true,
   member: {
     select: {
@@ -34,27 +33,42 @@ const projectMemberSelect = {
 } satisfies Prisma.ProjectMemberSelect;
 
 export class ProjectMemberRepository {
+  // async getProjectMembers(
+  //   projectId: string,
+  //   { where, take, skip }: GetProjectMembersArgs,
+  //   tx: PrismaTransactionClient = prisma,
+  // ) {
+  //   const scopedWhere: Prisma.ProjectMemberWhereInput = {
+  //     ...where,
+  //     projectId,
+  //     deletedAt: null,
+  //   };
+  //   const [projectMembers, total] = await Promise.all([
+  //     tx.projectMember.findMany({
+  //       where: scopedWhere,
+  //       take,
+  //       skip,
+  //       orderBy: { createdAt: "desc" },
+  //       select: projectMemberSelect,
+  //     }),
+  //     tx.projectMember.count({ where: scopedWhere }),
+  //   ]);
+  //   return { projectMembers, total };
+  // }
+
   async getProjectMembers(
     projectId: string,
-    { where, take, skip }: GetProjectMembersArgs,
     tx: PrismaTransactionClient = prisma,
   ) {
-    const scopedWhere: Prisma.ProjectMemberWhereInput = {
-      ...where,
-      projectId,
-      deletedAt: null,
-    };
-    const [projectMembers, total] = await Promise.all([
-      tx.projectMember.findMany({
-        where: scopedWhere,
-        take,
-        skip,
-        orderBy: { createdAt: "desc" },
-        select: projectMemberSelect,
-      }),
-      tx.projectMember.count({ where: scopedWhere }),
-    ]);
-    return { projectMembers, total };
+    const projectMembers = await tx.projectMember.findMany({
+      where: {
+        projectId,
+        deletedAt: null,
+      },
+      select: projectMemberSelect,
+    });
+
+    return projectMembers;
   }
 
   async getProjectMember(

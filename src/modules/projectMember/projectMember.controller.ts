@@ -14,7 +14,6 @@ export class ProjectMemberController {
       const projectMembers = await this.projectMemberService.getProjectMembers(
         user.id,
         projectId as string,
-        req.validatedQuery,
       );
 
       res.status(200).json({

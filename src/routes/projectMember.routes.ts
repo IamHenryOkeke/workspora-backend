@@ -8,7 +8,7 @@ import { ProjectMemberSchema } from "../modules/projectMember/projectMember.sche
 import { ProjectRepository } from "../modules/project/project.repository";
 import { OrganizationRepository } from "../modules/organization/organization.repository";
 
-const projectMemberRouter = Router();
+const projectMemberRouter = Router({ mergeParams: true });
 
 const projectRepo = new ProjectRepository();
 const organizationRepo = new OrganizationRepository();

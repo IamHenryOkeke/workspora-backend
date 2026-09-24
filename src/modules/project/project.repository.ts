@@ -22,16 +22,16 @@ const projectSelect = {
   description: true,
   status: true,
   organizationId: true,
-  creatorId: true,
+  // creatorId: true,
   createdAt: true,
   updatedAt: true,
-  creator: {
-    select: {
-      id: true,
-      fullName: true,
-      avatar: true,
-    },
-  },
+  // creator: {
+  //   select: {
+  //     id: true,
+  //     fullName: true,
+  //     avatar: true,
+  //   },
+  // },
   projectMembers: {
     select: {
       member: {
@@ -40,6 +40,8 @@ const projectSelect = {
             select: {
               id: true,
               fullName: true,
+              email: true,
+              avatar: true,
             },
           },
         },
@@ -88,7 +90,14 @@ export class ProjectRepository {
           members: { some: { memberId, deletedAt: null } },
         }),
       },
-      select: projectSelect,
+      select: {
+        id: true,
+        name: true,
+        description: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+      },
     });
   }
 

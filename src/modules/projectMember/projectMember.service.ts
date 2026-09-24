@@ -27,11 +27,7 @@ export class ProjectMemberService {
     return organization;
   }
 
-  async getProjectMembers(
-    userId: string,
-    projectId: string,
-    query: z.infer<typeof ProjectMemberSchema.querySchema>,
-  ) {
+  async getProjectMembers(userId: string, projectId: string) {
     const organization = await this.getProjectOrganization(projectId, userId);
 
     const membership = await this.organizationRepo.getOrganizationMember(
@@ -40,24 +36,10 @@ export class ProjectMemberService {
     );
     if (!membership) throw new AppError("Project not found.", 404);
 
-    const { page, limit } = query;
-    const skip = (page - 1) * limit;
+    const projectMembers =
+      await this.projectMemberRepo.getProjectMembers(projectId);
 
-    const { projectMembers, total } =
-      await this.projectMemberRepo.getProjectMembers(projectId, {
-        take: limit,
-        skip,
-      });
-
-    return {
-      projectMembers,
-      pagination: {
-        page,
-        limit,
-        total,
-        totalPages: Math.ceil(total / limit),
-      },
-    };
+    return projectMembers;
   }
 
   async createProjectMember(
