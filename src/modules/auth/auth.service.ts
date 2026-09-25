@@ -10,12 +10,13 @@ import { prisma } from "../../lib/prisma";
 import { comparePassword, hashPassword } from "../../utils/password";
 import { generateToken, hashToken } from "../../utils/token";
 import { User } from "../../generated/prisma/client";
+import { resetPasswordEmail, verifyAccountEmail } from "../../email-templates";
 
 const FRONTEND_URL = getEnv("FRONTEND_URL");
 
 const TOKEN_EXPIRY = {
   VERIFY_EMAIL: 10 * 60 * 1000,
-  RESET_PASSWORD: 5 * 60 * 1000,
+  RESET_PASSWORD: 15 * 60 * 1000,
   ACCESS_TOKEN: 15 * 60,
   REFRESH_TOKEN: 7 * 24 * 60 * 60,
 };
@@ -45,14 +46,7 @@ export class AuthService {
       {
         title: "Verify your account",
         to: user.email,
-        name: user.fullName,
-        content: `
-        <div>
-          <p>Hello ${user.fullName || user.email},</p>
-          <p>Please verify your email by clicking the following link: <a href="${verificationLink}">Verify Email</a></p>
-          <p>Link expires in 10 minutes.</p>
-        </div>
-      `,
+        content: verifyAccountEmail(user.fullName, verificationLink),
       },
       queueConfig,
     );
@@ -291,7 +285,7 @@ export class AuthService {
 
     await this.authRepo.createToken(values);
 
-    const verificationLink = `${FRONTEND_URL}/auth/reset-password?token=${raw}`;
+    const resetPasswordLink = `${FRONTEND_URL}/auth/reset-password?token=${raw}`;
 
     await emailQueue.add(
       "send-password-reset-email",
@@ -299,14 +293,10 @@ export class AuthService {
         title: "Reset Your Password!",
         to: existingUserByEmail.email,
         name: existingUserByEmail.fullName,
-        content: `
-          <div>
-            <p>Hello ${existingUserByEmail.fullName},</p>
-            <p>You requested to reset your password. Click the button below:</p>
-            <p><a href="${verificationLink}" style="padding: 10px 15px; background: #007BFF; color: white; text-decoration: none;">Reset Password</a></p>
-            <p>If you didn't request this, you can ignore this email.</p>
-          </div>
-        `,
+        content: resetPasswordEmail(
+          existingUserByEmail.fullName,
+          resetPasswordLink,
+        ),
       },
       queueConfig,
     );
