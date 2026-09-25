@@ -10,6 +10,10 @@ import { AppError } from "../../error/error-handler";
 import { OrganizationRepository } from "../organization/organization.repository";
 import { emailQueue } from "../../queues/email.queue";
 import { queueConfig } from "../../utils/queue-config";
+import {
+  removedFromOrganizationEmail,
+  roleUpdatedEmail,
+} from "../../email-templates";
 
 export class MemberService {
   constructor(
@@ -133,14 +137,11 @@ export class MemberService {
       {
         title: "Role updated",
         to: email,
-        name: fullName,
-        content: `
-          <div>
-            <p>Hello ${fullName},</p>
-            <p>Your role in <strong>${member.organization.name}</strong> has been updated to <strong>${data.role}</strong>.</p>
-            <p>If you weren't expecting this change, please contact your organization administrator.</p>
-          </div>
-        `,
+        content: roleUpdatedEmail(
+          fullName,
+          member.organization.name,
+          data.role,
+        ),
       },
       queueConfig,
     );
@@ -194,14 +195,10 @@ export class MemberService {
       {
         title: "Removed from organization",
         to: email,
-        name: fullName,
-        content: `
-          <div>
-            <p>Hello ${fullName},</p>
-            <p>You have been removed from <strong>${member.organization.name}</strong>.</p>
-            <p>If you weren't expecting this change, please contact your organization administrator.</p>
-          </div>
-        `,
+        content: removedFromOrganizationEmail(
+          fullName,
+          member.organization.name,
+        ),
       },
       queueConfig,
     );

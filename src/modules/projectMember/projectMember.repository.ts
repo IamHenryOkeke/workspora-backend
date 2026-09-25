@@ -16,6 +16,16 @@ const projectMemberSelect = {
   id: true,
   projectId: true,
   createdAt: true,
+  project: {
+    select: {
+      name: true,
+      organization: {
+        select: {
+          name: true,
+        },
+      },
+    },
+  },
   member: {
     select: {
       id: true,

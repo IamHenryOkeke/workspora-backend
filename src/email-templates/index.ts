@@ -72,3 +72,74 @@ export const organizationInvitationEmail = (
   `;
   return emailTemplate(title, content);
 };
+
+export const removedFromOrganizationEmail = (
+  fullName: string,
+  organizationName: string,
+) => {
+  const title = "Removed from Organization";
+  const content = `
+    <p>Hi ${fullName},</p>
+    <p>You have been removed from <strong>${organizationName}</strong>.</p>
+    <p>If you weren't expecting this change, please contact your organization administrator.</p>
+    <div style="display: grid; margin-top: 30px;">
+      <span style="margin-top: 8px;">Warm regards,</span>
+      <span style="margin-top: 8px;">Workspora Team</span>
+    </div>
+  `;
+  return emailTemplate(title, content);
+};
+
+export const roleUpdatedEmail = (
+  fullName: string,
+  organizationName: string,
+  newRole: string,
+) => {
+  const title = "Role Updated";
+  const content = `
+    <p>Hi ${fullName},</p>
+    <p>Your role in <strong>${organizationName}</strong> has been updated to <strong>${newRole.toLowerCase()}</strong>.</p>
+    <p>If you weren't expecting this change, please contact your organization administrator.</p>
+    <div style="display: grid; margin-top: 30px;">
+      <span style="margin-top: 8px;">Warm regards,</span>
+      <span style="margin-top: 8px;">Workspora Team</span>
+    </div>
+  `;
+  return emailTemplate(title, content);
+};
+
+export const addedToProjectEmail = (
+  fullName: string,
+  projectName: string,
+  organizationName: string,
+  projectUrl: string,
+  projectRole?: string,
+) => {
+  const title = `Added to ${projectName}`;
+  const content = `
+    <p>Hi ${fullName},</p>
+    <p>You have been added to the <strong>${projectName}</strong> project in <strong>${organizationName}</strong> on Workspora.</p>
+    ${
+      projectRole
+        ? `<p>You have been added to the project as a <strong>${projectRole.toLowerCase()}</strong>.</p>`
+        : ""
+    }
+    <p>You can now access the project and collaborate with other members of your team.</p>
+
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${projectUrl}" target="_blank" rel="noopener noreferrer"
+        style="background-color: ${ACCENT}; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+        View Project
+      </a>
+    </div>
+
+    <p>If you weren't expecting to be added to this project, please contact your organization administrator.</p>
+
+    <div style="display: grid; margin-top: 30px;">
+      <span style="margin-top: 8px;">Warm regards,</span>
+      <span style="margin-top: 8px;">Workspora Team</span>
+    </div>
+  `;
+
+  return emailTemplate(title, content);
+};

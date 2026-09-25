@@ -4,6 +4,12 @@ import { ProjectMemberSchema } from "./projectMember.schema";
 import { ProjectRepository } from "../project/project.repository";
 import { AppError } from "../../error/error-handler";
 import { OrganizationRepository } from "../organization/organization.repository";
+import { emailQueue } from "../../queues/email.queue";
+import { queueConfig } from "../../utils/queue-config";
+import { addedToProjectEmail } from "../../email-templates";
+import { getEnv } from "../../config/env";
+
+const FRONTEND_URL = getEnv("FRONTEND_URL");
 
 export class ProjectMemberService {
   constructor(
@@ -85,10 +91,39 @@ export class ProjectMemberService {
       return await this.projectMemberRepo.restoreProjectMember(existing.id);
     }
 
-    return await this.projectMemberRepo.createProjectMember({
+    const newProjectMember = await this.projectMemberRepo.createProjectMember({
       project: { connect: { id: projectId } },
       member: { connect: { id: memberId } },
     });
+
+    const {
+      member: {
+        user: { email, fullName },
+      },
+      project: {
+        name: projectName,
+        organization: { name: organizationName },
+      },
+    } = newProjectMember;
+
+    const projectUrl = `${FRONTEND_URL}/dashboard/org/${organization.slug}/projects`;
+
+    await emailQueue.add(
+      "send-new-project-member-email",
+      {
+        title: "You've been added to a project",
+        to: email,
+        content: addedToProjectEmail(
+          fullName,
+          projectName,
+          organizationName,
+          projectUrl,
+        ),
+      },
+      queueConfig,
+    );
+
+    return newProjectMember;
   }
 
   async removeProjectMember(
