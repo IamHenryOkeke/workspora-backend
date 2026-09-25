@@ -11,6 +11,10 @@ import { AppError } from "../../error/error-handler";
 import { emailQueue } from "../../queues/email.queue";
 import { queueConfig } from "../../utils/queue-config";
 import { generateToken } from "../../utils/token";
+import { getEnv } from "../../config/env";
+import { organizationInvitationEmail } from "../../email-templates";
+
+const FRONTEND_URL = getEnv("FRONTEND_URL");
 
 export class InvitationService {
   constructor(
@@ -19,8 +23,10 @@ export class InvitationService {
   ) {}
 
   private async assertAdminPrivilege(userId: string, organizationId: string) {
-    const organization =
-      await this.organizationRepo.getOrganizationById(organizationId);
+    const organization = await this.organizationRepo.getOrganizationById(
+      organizationId,
+      userId,
+    );
     if (!organization) throw new AppError("Organization not found.", 404);
 
     const membership = await this.organizationRepo.getOrganizationMember(
@@ -41,23 +47,25 @@ export class InvitationService {
       email: string;
       role: MemberRole;
       organization: { name: string };
+      invitedBy: {
+        fullName: string;
+      };
     },
     rawToken: string,
   ) {
+    const invitationLink = `${FRONTEND_URL}/invitations/accept?token=${rawToken}`;
     await emailQueue
       .add(
         "send-invitation-email",
         {
           title: `You've been invited to ${invitation.organization.name}`,
           to: invitation.email,
-          name: invitation.email,
-          content: `
-            <div>
-              <p>You have been invited to join ${invitation.organization.name} as a ${invitation.role}.</p>
-              <p>Please click the link below to accept the invitation:</p>
-              <a href="https://yourapp.com/invitations/accept?token=${rawToken}">Accept Invitation</a>
-            </div>
-          `,
+          content: organizationInvitationEmail(
+            invitation.organization.name,
+            invitation.role,
+            invitationLink,
+            invitation.invitedBy.fullName,
+          ),
         },
         queueConfig,
       )
@@ -164,11 +172,11 @@ export class InvitationService {
       invitedBy: { connect: { id: userId } },
     };
 
-    const { email, organization } =
+    const { email, organization, invitedBy } =
       await this.invitationRepo.createInvitation(inviteData);
 
     await this.sendInvitationEmail(
-      { email, role: data.role as MemberRole, organization },
+      { email, role: data.role as MemberRole, organization, invitedBy },
       raw,
     );
 
@@ -240,11 +248,14 @@ export class InvitationService {
       },
     );
 
+    const { email, role, organization, invitedBy } = updatedInvitation;
+
     await this.sendInvitationEmail(
       {
-        email: updatedInvitation.email,
-        role: updatedInvitation.role,
-        organization: updatedInvitation.organization,
+        email,
+        role,
+        organization,
+        invitedBy,
       },
       raw,
     );

@@ -20,7 +20,7 @@ export const verifyAccountEmail = (name: string, verifyUrl: string) => {
       <span style="margin-top: 8px;">Warm regards,</span>
       <span style="margin-top: 8px;">Workspora Team</span>
     </div>
-`;
+  `;
   return emailTemplate(title, content);
 };
 
@@ -40,6 +40,35 @@ export const resetPasswordEmail = (name: string, resetUrl: string) => {
       <span style="margin-top: 8px;">Warm regards,</span>
       <span style="margin-top: 8px;">Workspora Team</span>
     </div>
-`;
+  `;
+  return emailTemplate(title, content);
+};
+
+export const organizationInvitationEmail = (
+  organizationName: string,
+  role: string,
+  invitationLink: string,
+  inviterName?: string,
+) => {
+  const title = `You've Been Invited to Join ${organizationName}`;
+  const content = `
+    <p>Hi there,</p>
+    <p>${
+      inviterName ? `${inviterName} has invited` : "You've been invited"
+    } you to join <strong>${organizationName}</strong> on Workspora as a${
+      /^[aeiou]/i.test(role) ? "n" : ""
+    } <strong>${role.toLowerCase()}</strong>.</p>
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${invitationLink}" target="_blank" rel="noopener noreferrer" style="background-color: ${ACCENT}; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">Accept Invitation</a>
+    </div>
+    <p>If the button above doesn't work, you can copy and paste the following link into your browser:</p>
+    <p style="word-break: break-all; font-size: 13px; color: #555;">${invitationLink}</p>
+    <p style="font-size: 13px; color: #888;">This invitation link will expire after a set period. If it has expired, ask an admin at ${organizationName} to send you a new one.</p>
+    <p>If you weren't expecting this invitation, you can safely ignore this email.</p>
+    <div style="display: grid; margin-top: 30px;">
+      <span style="margin-top: 8px;">Warm regards,</span>
+      <span style="margin-top: 8px;">Workspora Team</span>
+    </div>
+  `;
   return emailTemplate(title, content);
 };
