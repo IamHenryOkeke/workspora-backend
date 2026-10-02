@@ -15,7 +15,7 @@ const invitationTokenService = new InvitationTokenService(
   invitationTokenRepo,
   memberRepo,
 );
-const invitationController = new InvitationTokenController(
+const invitationTokenController = new InvitationTokenController(
   invitationTokenService,
 );
 
@@ -24,7 +24,7 @@ invitationTokenRouter.get(
   validate({
     query: InvitationTokenSchema.invitationTokenParamSchema,
   }),
-  invitationController.previewInvitation,
+  invitationTokenController.previewInvitation,
 );
 
 invitationTokenRouter.use(isAuthenticated);
@@ -34,7 +34,7 @@ invitationTokenRouter.post(
   validate({
     query: InvitationTokenSchema.invitationTokenParamSchema,
   }),
-  invitationController.acceptInvitation,
+  invitationTokenController.acceptInvitation,
 );
 
 invitationTokenRouter.post(
@@ -42,7 +42,7 @@ invitationTokenRouter.post(
   validate({
     query: InvitationTokenSchema.invitationTokenParamSchema,
   }),
-  invitationController.declineInvitation,
+  invitationTokenController.declineInvitation,
 );
 
 export default invitationTokenRouter;

@@ -82,6 +82,7 @@ export class InvitationService {
     const skip = (page - 1) * limit;
 
     const where: Prisma.InvitationWhereInput = {
+      organizationId,
       ...(searchTerm && {
         email: { contains: searchTerm, mode: "insensitive" },
       }),
@@ -196,8 +197,8 @@ export class InvitationService {
     await this.assertAdminPrivilege(userId, organizationId);
 
     const existingInvitation = await this.invitationRepo.getInvitationById(
-      organizationId,
       invitationId,
+      organizationId,
     );
 
     if (!existingInvitation) {
