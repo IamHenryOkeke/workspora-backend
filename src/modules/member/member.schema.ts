@@ -27,9 +27,17 @@ export class MemberSchema {
     memberId: z.cuid({ error: "Invalid member ID" }),
   });
 
-  static updateMemberRoleSchema = z.object({
-    role: z.enum(["ADMIN", "MEMBER", "OWNER"], {
-      error: "Please enter a valid role value",
-    }),
-  });
+  static updateMemberSchema = z
+    .object({
+      role: z
+        .enum(["ADMIN", "MEMBER"], {
+          error: "Please enter a valid role value",
+        })
+        .optional(),
+      status: z.enum(["ACTIVE", "SUSPENDED"]).optional(),
+    })
+    .refine((data) => data.role !== undefined || data.status !== undefined, {
+      error: "At least one of role or status must be provided",
+      path: ["role", "status"],
+    });
 }

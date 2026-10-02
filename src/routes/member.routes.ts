@@ -33,12 +33,12 @@ memberRouter.get(
 );
 
 memberRouter.put(
-  "/:memberId/update-role",
+  "/:memberId/update",
   validate({
     params: MemberSchema.memberParamSchema,
-    body: MemberSchema.updateMemberRoleSchema,
+    body: MemberSchema.updateMemberSchema,
   }),
-  memberController.updateMemberRole,
+  memberController.updateMember,
 );
 
 memberRouter.delete(

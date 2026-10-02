@@ -47,12 +47,12 @@ export class MemberController {
     },
   );
 
-  updateMemberRole = asyncHandler(
+  updateMember = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = req.user as User;
       const { organizationId, memberId } = req.params;
 
-      await this.memberService.updateMemberRole(
+      await this.memberService.updateMember(
         user.id,
         organizationId as string,
         memberId as string,

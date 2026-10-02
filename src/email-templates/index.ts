@@ -108,6 +108,24 @@ export const roleUpdatedEmail = (
   return emailTemplate(title, content);
 };
 
+export const memberStatusUpdatedEmail = (
+  fullName: string,
+  organizationName: string,
+  newRole: string,
+) => {
+  const title = "Role Updated";
+  const content = `
+    <p>Hi ${fullName},</p>
+    <p>Your role in <strong>${organizationName}</strong> has been updated to <strong>${newRole.toLowerCase()}</strong>.</p>
+    <p>If you weren't expecting this change, please contact your organization administrator.</p>
+    <div style="display: grid; margin-top: 30px;">
+      <span style="margin-top: 8px;">Warm regards,</span>
+      <span style="margin-top: 8px;">Workspora Team</span>
+    </div>
+  `;
+  return emailTemplate(title, content);
+};
+
 export const addedToProjectEmail = (
   fullName: string,
   projectName: string,

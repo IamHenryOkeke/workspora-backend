@@ -11,9 +11,17 @@ import { OrganizationRepository } from "../organization/organization.repository"
 import { emailQueue } from "../../queues/email.queue";
 import { queueConfig } from "../../utils/queue-config";
 import {
+  memberStatusUpdatedEmail,
   removedFromOrganizationEmail,
   roleUpdatedEmail,
 } from "../../email-templates";
+
+const EDITABLE_STATUSES: MemberStatus[] = [
+  MemberStatus.ACTIVE,
+  MemberStatus.SUSPENDED,
+];
+
+type UpdateMemberInput = z.infer<typeof MemberSchema.updateMemberSchema>;
 
 export class MemberService {
   constructor(
@@ -86,11 +94,11 @@ export class MemberService {
     return member;
   }
 
-  async updateMemberRole(
+  async updateMember(
     userId: string,
     organizationId: string,
     memberId: string,
-    data: { role: MemberRole },
+    data: { role?: MemberRole; status?: MemberStatus },
   ) {
     const callerMembership = await this.organizationRepo.getOrganizationMember(
       organizationId,
@@ -104,47 +112,109 @@ export class MemberService {
     );
     if (!target) throw new AppError("Member not found.", 404);
 
-    const canManage =
-      callerMembership.role === MemberRole.OWNER ||
-      callerMembership.role === MemberRole.ADMIN;
-    if (!canManage)
-      throw new AppError(
-        "You don't have permission to change member roles.",
-        403,
-      );
+    const isOwner = callerMembership.role === MemberRole.OWNER;
+    const isAdmin = callerMembership.role === MemberRole.ADMIN;
 
+    if (!isOwner && !isAdmin)
+      throw new AppError("You don't have permission to update members.", 403);
+
+    if (callerMembership.status !== MemberStatus.ACTIVE)
+      throw new AppError("Your membership is not active.", 403);
+
+    // Owners can't be modified through this endpoint (this also blocks owners editing themselves).
     if (target.role === MemberRole.OWNER)
       throw new AppError(
-        "The organization owner's role cannot be changed here.",
+        "The organization owner cannot be modified here.",
         403,
       );
 
-    if (callerMembership.role === MemberRole.ADMIN) {
-      if (data.role === MemberRole.ADMIN || target.role === MemberRole.ADMIN)
-        throw new AppError("Only the owner can manage admin roles.", 403);
+    // Admins only manage plain members (this also blocks admins editing themselves or other admins).
+    if (isAdmin && target.role !== MemberRole.MEMBER)
+      throw new AppError("Only the owner can manage admins.", 403);
+
+    // Role rules
+    if (data.role !== undefined) {
+      if (!isOwner) throw new AppError("Only the owner can change roles.", 403);
+      if (data.role === MemberRole.OWNER)
+        throw new AppError("Ownership can't be assigned here.", 400);
     }
+
+    // Status rules
+    if (data.status !== undefined) {
+      if (!EDITABLE_STATUSES.includes(data.status))
+        throw new AppError(
+          "Status can only be set to active or suspended.",
+          400,
+        );
+      if (!EDITABLE_STATUSES.includes(target.status))
+        throw new AppError(
+          "Pending and invited members are managed from invitations.",
+          400,
+        );
+    }
+
+    const roleChanged = data.role !== undefined && data.role !== target.role;
+    const statusChanged =
+      data.status !== undefined && data.status !== target.status;
+
+    if (!roleChanged && !statusChanged)
+      throw new AppError("No changes to apply.", 400);
+
+    const updates: UpdateMemberInput = {
+      ...(roleChanged && data.role !== undefined && { role: data.role }),
+      ...(statusChanged &&
+        data.status !== undefined && {
+          status: data.status as UpdateMemberInput["status"],
+        }),
+    };
+
     const member = await this.memberRepo.updateMember(
       memberId,
       organizationId,
-      data,
+      updates,
     );
     if (!member) throw new AppError("Member not found.", 404);
 
     const { email, fullName } = member.user;
+    const organizationName = member.organization.name;
+    const jobs: Promise<unknown>[] = [];
 
-    await emailQueue.add(
-      "send-role-update-email",
-      {
-        title: "Role updated",
-        to: email,
-        content: roleUpdatedEmail(
-          fullName,
-          member.organization.name,
-          data.role,
+    if (roleChanged) {
+      jobs.push(
+        emailQueue.add(
+          "send-role-update-email",
+          {
+            title: "Role updated",
+            to: email,
+            content: roleUpdatedEmail(fullName, organizationName, member.role),
+          },
+          queueConfig,
         ),
-      },
-      queueConfig,
-    );
+      );
+    }
+
+    if (statusChanged) {
+      jobs.push(
+        emailQueue.add(
+          "send-status-update-email",
+          {
+            title:
+              member.status === MemberStatus.SUSPENDED
+                ? "Access suspended"
+                : "Access restored",
+            to: email,
+            content: memberStatusUpdatedEmail(
+              fullName,
+              organizationName,
+              member.status,
+            ),
+          },
+          queueConfig,
+        ),
+      );
+    }
+
+    await Promise.all(jobs);
     return member;
   }
 
