@@ -110,7 +110,7 @@ export class OrganizationController {
   updateOrganization = asyncHandler(async (req, res) => {
     const user = req.user as User;
     const { organizationId } = req.params;
-    console.log(req.body);
+
     const organization = await this.organizationService.updateOrganization(
       user.id,
       organizationId as string,
@@ -125,6 +125,7 @@ export class OrganizationController {
           logo: organization.logo,
           name: organization.name,
           description: organization.description,
+          slug: organization.slug,
         },
       },
     });

@@ -10,6 +10,16 @@ import { generateSlug } from "../../utils/slug";
 import { OrganizationRepository } from "./organization.repository";
 import { OrganizationSchema } from "./organization.schema";
 
+const RESERVED_SLUGS = new Set([
+  "new",
+  "settings",
+  "api",
+  "admin",
+  "invite",
+  "login",
+  "signup",
+]);
+
 export type OrganizationActivity = {
   type: "member_joined" | "invitation_sent" | "project_created";
   id: string;
@@ -181,36 +191,34 @@ export class OrganizationService {
     data: { name: string; description: string; logo: string },
   ) {
     const slug = generateSlug(data.name);
-    const organization = await prisma.$transaction(async (tx) => {
-      const existingOrg = await this.organizationRepo.getOrganizationBySlug(
-        slug,
-        userId,
-        tx,
-      );
-      if (existingOrg)
-        throw new AppError("Organization with this name already exists.", 409);
+    if (!slug || RESERVED_SLUGS.has(slug)) {
+      throw new AppError("Please choose a different organization name.", 400);
+    }
 
-      const newOrg = await this.organizationRepo.createOrganization(
-        {
-          name: data.name,
-          description: data.description,
-          logo: data.logo,
-          slug,
-          owner: { connect: { id: userId } },
-          members: {
-            create: {
-              userId: userId,
-              role: MemberRole.OWNER,
-              status: MemberStatus.ACTIVE,
-            },
+    try {
+      return await this.organizationRepo.createOrganization({
+        name: data.name,
+        description: data.description,
+        logo: data.logo,
+        slug,
+        owner: { connect: { id: userId } },
+        members: {
+          create: {
+            userId,
+            role: MemberRole.OWNER,
+            status: MemberStatus.ACTIVE,
           },
         },
-        tx,
-      );
-      return newOrg;
-    });
-
-    return organization;
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        throw new AppError("Organization with this name already exists.", 409);
+      }
+      throw error;
+    }
   }
 
   async updateOrganization(
@@ -218,28 +226,58 @@ export class OrganizationService {
     organizationId: string,
     data: z.infer<typeof OrganizationSchema.updateOrganizationSchema>,
   ) {
-    const organization = await this.organizationRepo.getOrganizationById(
-      organizationId,
-      userId,
-    );
-    if (!organization) throw new AppError("Organization not found.", 404);
-
     const membership = await this.organizationRepo.getOrganizationMember(
       organizationId,
       userId,
     );
-    if (!membership) throw new AppError("Organization not found.", 404);
+    if (!membership || membership.status !== MemberStatus.ACTIVE) {
+      throw new AppError("Organization not found.", 404);
+    }
 
     const canUpdate =
       membership.role === MemberRole.OWNER ||
       membership.role === MemberRole.ADMIN;
-    if (!canUpdate)
+    if (!canUpdate) {
       throw new AppError(
         "You don't have permission to update this organization.",
         403,
       );
+    }
 
-    return this.organizationRepo.updateOrganization(organizationId, data);
+    const { name, description, logo } = data;
+    let slug: string | undefined;
+    if (name) {
+      slug = generateSlug(name);
+      if (!slug || RESERVED_SLUGS.has(slug)) {
+        throw new AppError("Please choose a different organization name.", 400);
+      }
+    }
+
+    try {
+      return await this.organizationRepo.updateOrganization(organizationId, {
+        ...(name && { name }),
+        ...(description && { description }),
+        ...(slug && { slug }),
+        ...(logo !== undefined && { logo }),
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === "P2002"
+      ) {
+        throw new AppError("Organization with this name already exists.", 409);
+      }
+      throw error;
+    }
+  }
+
+  // For the live availability hint in the form
+  async isSlugAvailable(slug: string, excludeOrganizationId?: string) {
+    const existing = await prisma.organization.findUnique({
+      where: { slug },
+      select: { id: true },
+    });
+    return !existing || existing.id === excludeOrganizationId;
   }
 
   async deleteOrganization(userId: string, organizationId: string) {

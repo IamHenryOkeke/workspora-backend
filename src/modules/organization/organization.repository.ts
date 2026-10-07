@@ -189,6 +189,18 @@ export class OrganizationRepository {
             data: { deletedAt: new Date() },
           },
         },
+        invitations: {
+          updateMany: {
+            where: { status: "REVOKED" },
+            data: { deletedAt: new Date() },
+          },
+        },
+        projects: {
+          updateMany: {
+            where: { deletedAt: null },
+            data: { deletedAt: new Date() },
+          },
+        },
       },
     });
   }
