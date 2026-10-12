@@ -13,6 +13,7 @@ import { queueConfig } from "../../utils/queue-config";
 import { generateToken } from "../../utils/token";
 import { getEnv } from "../../config/env";
 import { organizationInvitationEmail } from "../../email-templates";
+import { UserRepository } from "../user/user.repository";
 
 const FRONTEND_URL = getEnv("FRONTEND_URL");
 
@@ -20,15 +21,10 @@ export class InvitationService {
   constructor(
     private invitationRepo: InvitationRepository,
     private organizationRepo: OrganizationRepository,
+    private userRepo: UserRepository,
   ) {}
 
   private async assertAdminPrivilege(userId: string, organizationId: string) {
-    const organization = await this.organizationRepo.getOrganizationById(
-      organizationId,
-      userId,
-    );
-    if (!organization) throw new AppError("Organization not found.", 404);
-
     const membership = await this.organizationRepo.getOrganizationMember(
       organizationId,
       userId,
@@ -134,6 +130,14 @@ export class InvitationService {
     organizationId: string,
     data: z.infer<typeof InvitationSchema.createInvitationSchema>,
   ) {
+    console.log(
+      "Creating invitation for userId:",
+      userId,
+      "organizationId:",
+      organizationId,
+      "data:",
+      data,
+    );
     await this.assertAdminPrivilege(userId, organizationId);
 
     const existingInvitation = await this.invitationRepo.getPendingInvitation(
@@ -163,13 +167,18 @@ export class InvitationService {
 
     const { raw, hashed } = generateToken();
 
+    const existingUserByEmail = await this.userRepo.getUserByEmail(data.email);
+
     const inviteData: Prisma.InvitationCreateInput = {
       email: data.email,
+      ...(existingUserByEmail && {
+        user: { connect: { id: existingUserByEmail.id } },
+      }),
       role: data.role as MemberRole,
       organization: { connect: { id: organizationId } },
       status: InvitationStatus.PENDING,
       token: hashed,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // Expires in 7 days
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
       invitedBy: { connect: { id: userId } },
     };
 

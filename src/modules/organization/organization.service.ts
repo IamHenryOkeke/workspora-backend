@@ -281,12 +281,6 @@ export class OrganizationService {
   }
 
   async leaveOrganization(userId: string, organizationId: string) {
-    const organization = await this.organizationRepo.getOrganizationById(
-      organizationId,
-      userId,
-    );
-    if (!organization) throw new AppError("Organization not found.", 404);
-
     const membership = await this.organizationRepo.getOrganizationMember(
       organizationId,
       userId,

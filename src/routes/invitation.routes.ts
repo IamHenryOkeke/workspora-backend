@@ -6,6 +6,7 @@ import { InvitationRepository } from "../modules/invitation/invitation.repositor
 import { InvitationService } from "../modules/invitation/invitation.service";
 import { InvitationController } from "../modules/invitation/invitation.controller";
 import { OrganizationRepository } from "../modules/organization/organization.repository";
+import { UserRepository } from "../modules/user/user.repository";
 
 const invitationRouter = Router({ mergeParams: true });
 
@@ -13,9 +14,11 @@ invitationRouter.use(isAuthenticated);
 
 const invitationRepo = new InvitationRepository();
 const organizationRepo = new OrganizationRepository();
+const userRepo = new UserRepository();
 const invitationService = new InvitationService(
   invitationRepo,
   organizationRepo,
+  userRepo,
 );
 const invitationController = new InvitationController(invitationService);
 

@@ -2,12 +2,16 @@ import { Prisma } from "../../generated/prisma/client";
 import { prisma } from "../../lib/prisma";
 
 type GetInvitationsArgs = {
-  where?: Prisma.MemberWhereInput;
+  where?: Prisma.InvitationWhereInput;
   take?: number;
   skip?: number;
 };
 
 export class UserRepository {
+  async getUserByEmail(email: string) {
+    return await prisma.user.findUnique({ where: { email, deletedAt: null } });
+  }
+
   async getUserById(id: string) {
     return prisma.user.findUnique({
       where: { id, deletedAt: null },
@@ -42,8 +46,23 @@ export class UserRepository {
   }
   async getInvitations({ where, take, skip }: GetInvitationsArgs) {
     const [invitations, total] = await Promise.all([
-      prisma.member.findMany({ where, take, skip }),
-      prisma.member.count({ where }),
+      prisma.invitation.findMany({
+        where,
+        take,
+        skip,
+        orderBy: { createdAt: "desc" },
+        select: {
+          id: true,
+          email: true,
+          status: true,
+          role: true,
+          organizationId: true,
+          createdAt: true,
+          organization: { select: { name: true, slug: true } },
+          invitedBy: { select: { fullName: true } },
+        },
+      }),
+      prisma.invitation.count({ where }),
     ]);
     return { invitations, total };
   }

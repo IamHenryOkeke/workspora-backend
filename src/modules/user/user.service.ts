@@ -1,5 +1,5 @@
 import { AppError } from "../../error/error-handler";
-import { MemberStatus, Prisma, User } from "../../generated/prisma/client";
+import { Prisma, User } from "../../generated/prisma/client";
 import { comparePassword, hashPassword } from "../../utils/password";
 import { UserRepository } from "./user.repository";
 
@@ -83,27 +83,16 @@ export class UserService {
   async getInvitations(
     user: User,
     queryParams: {
-      searchTerm: string;
       page: number;
       limit: number;
     },
   ) {
-    const { searchTerm, page, limit } = queryParams;
-    const { id: userId } = user;
+    const { page, limit } = queryParams;
+    const { id, email } = user;
 
-    const where: Prisma.MemberWhereInput = {
-      organization: {
-        deletedAt: null,
-        ...(searchTerm && {
-          name: {
-            contains: searchTerm,
-            mode: "insensitive",
-          },
-        }),
-      },
-      userId,
-      status: MemberStatus.INVITED,
-      deletedAt: null,
+    const where: Prisma.InvitationWhereInput = {
+      userId: id,
+      email,
     };
 
     const { invitations, total } = await this.userRepo.getInvitations({

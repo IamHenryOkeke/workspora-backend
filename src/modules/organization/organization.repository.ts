@@ -125,7 +125,14 @@ export class OrganizationRepository {
     tx: PrismaTransactionClient = prisma,
   ) {
     return tx.member.findFirst({
-      where: { organizationId, userId, deletedAt: null },
+      where: {
+        userId,
+        deletedAt: null,
+        organization: {
+          id: organizationId,
+          deletedAt: null,
+        },
+      },
     });
   }
 
