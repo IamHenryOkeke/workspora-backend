@@ -178,6 +178,29 @@ export class OrganizationRepository {
   ) {
     return tx.organization.update({ where: { id }, data });
   }
+
+  async leaveOrganization(
+    id: string,
+    memberId: string,
+    tx: PrismaTransactionClient = prisma,
+  ) {
+    return tx.organization.update({
+      where: { id },
+      data: {
+        members: {
+          update: {
+            where: {
+              id: memberId,
+            },
+            data: {
+              deletedAt: new Date(),
+            },
+          },
+        },
+      },
+    });
+  }
+
   async deleteOrganization(id: string, tx: PrismaTransactionClient = prisma) {
     return tx.organization.update({
       where: { id },

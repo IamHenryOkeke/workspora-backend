@@ -77,6 +77,14 @@ organizationRouter.put(
   organizationController.updateOrganization,
 );
 
+organizationRouter.post(
+  "/:organizationId/leave",
+  validate({
+    params: OrganizationSchema.organizationParamSchema,
+  }),
+  organizationController.leaveOrganization,
+);
+
 organizationRouter.delete(
   "/:organizationId",
   validate({

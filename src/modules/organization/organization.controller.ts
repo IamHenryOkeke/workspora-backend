@@ -131,6 +131,21 @@ export class OrganizationController {
     });
   });
 
+  leaveOrganization = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const user = req.user as User;
+      const { organizationId } = req.params;
+      await this.organizationService.leaveOrganization(
+        user.id,
+        organizationId as string,
+      );
+
+      res.status(201).json({
+        message: "Organization left successfully",
+      });
+    },
+  );
+
   deleteOrganization = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = req.user as User;

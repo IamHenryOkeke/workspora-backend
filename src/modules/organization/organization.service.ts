@@ -280,6 +280,34 @@ export class OrganizationService {
     return !existing || existing.id === excludeOrganizationId;
   }
 
+  async leaveOrganization(userId: string, organizationId: string) {
+    const organization = await this.organizationRepo.getOrganizationById(
+      organizationId,
+      userId,
+    );
+    if (!organization) throw new AppError("Organization not found.", 404);
+
+    const membership = await this.organizationRepo.getOrganizationMember(
+      organizationId,
+      userId,
+    );
+    if (!membership) throw new AppError("Organization not found.", 404);
+
+    const canLeave = membership.role !== MemberRole.OWNER;
+    if (!canLeave)
+      throw new AppError(
+        "Owner cannot leave organization. Transfer ownership first",
+        403,
+      );
+
+    await this.organizationRepo.leaveOrganization(
+      organizationId,
+      membership.id,
+    );
+
+    return true;
+  }
+
   async deleteOrganization(userId: string, organizationId: string) {
     const organization = await this.organizationRepo.getOrganizationById(
       organizationId,
