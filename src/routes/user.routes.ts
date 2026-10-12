@@ -18,26 +18,28 @@ userRouter.use(isAuthenticated);
 
 userRouter.get("/me", userController.getUser);
 
-userRouter.patch(
+userRouter.put(
   "/me",
+  handleUpload("avatar"),
+  addFilePathToBody("avatar"),
   validate({
     body: UserSchema.updateUserSchema,
   }),
   userController.updateUserProfile,
 );
 
-userRouter.patch(
-  "/me/profile-picture",
-  handleUpload("avatar"),
-  addFilePathToBody("avatar"),
-  validate({
-    body: UserSchema.updateUserProfilePictureSchema,
-  }),
-  userController.updateUserProfile,
-);
+// userRouter.put(
+//   "/me/profile-picture",
+//   handleUpload("avatar"),
+//   addFilePathToBody("avatar"),
+//   validate({
+//     body: UserSchema.updateUserProfilePictureSchema,
+//   }),
+//   userController.updateUserProfile,
+// );
 
-userRouter.patch(
-  "/me/password",
+userRouter.put(
+  "/me/change-password",
   validate({
     body: UserSchema.updateUserPasswordSchema,
   }),

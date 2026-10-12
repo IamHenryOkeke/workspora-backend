@@ -6,6 +6,7 @@ import { AuthService } from "../modules/auth/auth.service";
 import { AuthController } from "../modules/auth/auth.controller";
 import { rateLimiter } from "../middleware/rate-limiter.middleware";
 import passport from "passport";
+import { User } from "../generated/prisma/client";
 
 const authRouter = Router();
 
@@ -32,7 +33,7 @@ authRouter.get(
 
 authRouter.post(
   "/login",
-  rateLimiter(5),
+  // rateLimiter(5),
   validate({ body: AuthSchema.loginUserSchema }),
   authController.login,
 );
@@ -66,7 +67,23 @@ authRouter.get(
 
 authRouter.get(
   "/google/callback",
-  passport.authenticate("google", { session: false }),
+  (req, res, next) => {
+    passport.authenticate(
+      "google",
+      { session: false },
+      (err: unknown, user: User | false) => {
+        if (err || !user) {
+          console.error("Google login failed:", err);
+          return res.redirect(
+            `${process.env.CLIENT_URL}/auth/login?error=google_failed`,
+          );
+        }
+
+        req.user = user; // what authenticate() would have done for you
+        next(); // hand off to the controller
+      },
+    )(req, res, next); // invoke the middleware it returns
+  },
   authController.googleAuthCallback,
 );
 

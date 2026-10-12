@@ -9,7 +9,13 @@ export class UserService {
   private async checkUserExists(userId: string) {
     const currentUser = await this.userRepo.getUserById(userId);
     if (!currentUser) throw new AppError("Account no longer exists.", 404);
-    return currentUser;
+    const { password, ...payload } = currentUser;
+
+    const user = {
+      hasPassword: password !== null,
+      ...payload,
+    };
+    return user;
   }
 
   async getUser(user: User) {
@@ -32,7 +38,22 @@ export class UserService {
     if (!currentUser) throw new AppError("Account no longer exists.", 404);
 
     const { currentPassword, newPassword } = data;
+
     if (!currentUser.password) {
+      if (!currentPassword && !newPassword) {
+        throw new AppError(
+          "This account uses Google sign-in and has no password.",
+          400,
+        );
+      }
+      if (!currentPassword && newPassword) {
+        const hashedPassword = await hashPassword(newPassword);
+        await this.userRepo.updateUserById(user.id, {
+          password: hashedPassword,
+        });
+        return true;
+      }
+
       throw new AppError(
         "This account uses Google sign-in and has no password.",
         400,

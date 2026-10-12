@@ -10,13 +10,14 @@ type GetInvitationsArgs = {
 export class UserRepository {
   async getUserById(id: string) {
     return prisma.user.findUnique({
-      where: { id },
+      where: { id, deletedAt: null },
       select: {
         id: true,
         email: true,
         fullName: true,
         avatar: true,
         phoneNumber: true,
+        password: true,
         isVerified: true,
         createdAt: true,
         updatedAt: true,
@@ -36,9 +37,6 @@ export class UserRepository {
         fullName: true,
         avatar: true,
         phoneNumber: true,
-        isVerified: true,
-        createdAt: true,
-        updatedAt: true,
       },
     });
   }

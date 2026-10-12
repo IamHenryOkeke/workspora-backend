@@ -27,7 +27,9 @@ export class UserSchema {
   });
 
   static updateUserPasswordSchema = z.object({
-    currentPassword: z.string({ error: "Current password is required" }),
+    currentPassword: z
+      .string({ error: "Current password is required" })
+      .optional(),
     newPassword: z
       .string({ error: "New password is required" })
       .min(8, { error: "New password must be at least 8 characters long" })
