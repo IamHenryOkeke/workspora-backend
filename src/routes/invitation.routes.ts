@@ -62,4 +62,12 @@ invitationRouter.post(
   invitationController.resendInvitationEmail,
 );
 
+invitationRouter.post(
+  "/:invitationId/accept",
+  validate({
+    params: InvitationSchema.invitationParamSchema,
+  }),
+  invitationController.acceptInvitation,
+);
+
 export default invitationRouter;

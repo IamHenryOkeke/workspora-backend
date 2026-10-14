@@ -130,14 +130,6 @@ export class InvitationService {
     organizationId: string,
     data: z.infer<typeof InvitationSchema.createInvitationSchema>,
   ) {
-    console.log(
-      "Creating invitation for userId:",
-      userId,
-      "organizationId:",
-      organizationId,
-      "data:",
-      data,
-    );
     await this.assertAdminPrivilege(userId, organizationId);
 
     const existingInvitation = await this.invitationRepo.getPendingInvitation(
@@ -271,5 +263,52 @@ export class InvitationService {
     );
 
     return updatedInvitation;
+  }
+
+  async acceptInvitation(
+    userId: string,
+    organizationId: string,
+    invitationId: string,
+  ) {
+    console.log(userId, organizationId, invitationId);
+    const invitation = await this.invitationRepo.getInvitationById(
+      invitationId,
+      organizationId,
+    );
+
+    if (!invitation) {
+      throw new AppError("Invitation not found.", 404);
+    }
+
+    if (invitation.status !== InvitationStatus.PENDING) {
+      throw new AppError("Only pending invitations can be accepted.", 400);
+    }
+
+    const existingMember = await this.organizationRepo.getOrganizationMember(
+      organizationId,
+      userId,
+    );
+
+    if (existingMember) {
+      throw new AppError(
+        "This user is already a member of the organization.",
+        400,
+      );
+    }
+
+    await this.invitationRepo.updateInvitation(invitationId, {
+      status: InvitationStatus.ACCEPTED,
+      organization: {
+        update: {
+          members: {
+            create: {
+              user: { connect: { id: userId } },
+              role: invitation.role,
+              status: "ACTIVE",
+            },
+          },
+        },
+      },
+    });
   }
 }

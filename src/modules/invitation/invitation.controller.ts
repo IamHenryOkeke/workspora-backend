@@ -101,4 +101,21 @@ export class InvitationController {
       });
     },
   );
+
+  acceptInvitation = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const user = req.user as User;
+      const { organizationId, invitationId } = req.params;
+
+      await this.invitationService.acceptInvitation(
+        user.id,
+        organizationId as string,
+        invitationId as string,
+      );
+
+      res.status(200).json({
+        message: "Invitation accepted successfully",
+      });
+    },
+  );
 }
