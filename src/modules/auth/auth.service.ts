@@ -190,6 +190,14 @@ export class AuthService {
     };
   }
 
+  async logout(refreshToken: string) {
+    const tokenHash = hashToken(refreshToken);
+
+    await this.authRepo.deleteTokenByTokenHash(tokenHash, TokenType.REFRESH);
+
+    return true;
+  }
+
   async refreshAccessToken(refreshToken: string) {
     if (!refreshToken) throw new AppError("Refresh token required", 401);
 
