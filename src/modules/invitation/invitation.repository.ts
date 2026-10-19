@@ -38,6 +38,11 @@ const invitationSelect = {
       email: true,
     },
   },
+  user: {
+    select: {
+      id: true,
+    },
+  },
 } satisfies Prisma.InvitationSelect;
 
 export class InvitationRepository {

@@ -108,7 +108,7 @@ export class InvitationController {
       const { organizationId, invitationId } = req.params;
 
       await this.invitationService.acceptInvitation(
-        user.id,
+        user,
         organizationId as string,
         invitationId as string,
       );

@@ -3,7 +3,9 @@ import { InvitationRepository } from "./invitation.repository";
 import {
   InvitationStatus,
   MemberRole,
+  MemberStatus,
   Prisma,
+  User,
 } from "../../generated/prisma/client";
 import { InvitationSchema } from "./invitation.schema";
 import { OrganizationRepository } from "../organization/organization.repository";
@@ -14,6 +16,7 @@ import { generateToken } from "../../utils/token";
 import { getEnv } from "../../config/env";
 import { organizationInvitationEmail } from "../../email-templates";
 import { UserRepository } from "../user/user.repository";
+import { prisma } from "../../lib/prisma";
 
 const FRONTEND_URL = getEnv("FRONTEND_URL");
 
@@ -266,11 +269,11 @@ export class InvitationService {
   }
 
   async acceptInvitation(
-    userId: string,
+    user: User,
     organizationId: string,
     invitationId: string,
   ) {
-    console.log(userId, organizationId, invitationId);
+    const { id: userId, email } = user;
     const invitation = await this.invitationRepo.getInvitationById(
       invitationId,
       organizationId,
@@ -284,31 +287,68 @@ export class InvitationService {
       throw new AppError("Only pending invitations can be accepted.", 400);
     }
 
-    const existingMember = await this.organizationRepo.getOrganizationMember(
-      organizationId,
-      userId,
-    );
-
-    if (existingMember) {
-      throw new AppError(
-        "This user is already a member of the organization.",
-        400,
-      );
+    if (invitation.email !== email) {
+      throw new AppError("This invite isn't yours", 403);
     }
 
-    await this.invitationRepo.updateInvitation(invitationId, {
-      status: InvitationStatus.ACCEPTED,
-      organization: {
-        update: {
-          members: {
-            create: {
-              user: { connect: { id: userId } },
-              role: invitation.role,
-              status: "ACTIVE",
+    const role =
+      invitation.role === MemberRole.OWNER ? MemberRole.ADMIN : invitation.role;
+
+    await prisma.$transaction(async (tx) => {
+      const existingMember = await this.organizationRepo.getOrganizationMember(
+        organizationId,
+        userId,
+        tx,
+      );
+
+      if (existingMember?.status === MemberStatus.SUSPENDED) {
+        throw new AppError(
+          "Your membership in this organization is suspended.",
+          403,
+        );
+      }
+
+      if (!existingMember) {
+        await this.invitationRepo.updateInvitation(
+          invitationId,
+          {
+            status: InvitationStatus.ACCEPTED,
+            organization: {
+              update: {
+                members: {
+                  create: {
+                    user: { connect: { id: userId } },
+                    role,
+                    status: "ACTIVE",
+                  },
+                },
+              },
             },
           },
-        },
-      },
+          tx,
+        );
+      } else if (existingMember.status !== MemberStatus.ACTIVE) {
+        await this.invitationRepo.updateInvitation(
+          invitationId,
+          {
+            organization: {
+              update: {
+                members: {
+                  update: {
+                    where: { id: existingMember.id },
+                    data: {
+                      status: MemberStatus.ACTIVE,
+                      role,
+                      deletedAt: null,
+                    },
+                  },
+                },
+              },
+            },
+          },
+          tx,
+        );
+      }
     });
   }
 }
