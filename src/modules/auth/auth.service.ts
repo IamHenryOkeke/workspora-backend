@@ -102,8 +102,13 @@ export class AuthService {
     const { email, password, fullName, inviteToken } = data;
 
     if (inviteToken) {
+      const hashedToken = crypto
+        .createHash("sha256")
+        .update(inviteToken)
+        .digest("hex");
+
       const invitation = await prisma.invitation.findUnique({
-        where: { token: inviteToken },
+        where: { token: hashedToken },
       });
 
       if (!invitation) throw new AppError("Invitation is invalid.", 400);

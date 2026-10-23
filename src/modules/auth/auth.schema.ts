@@ -22,12 +22,28 @@ export class AuthSchema {
       }),
   });
 
-  static registerUserSchema = this.createUserSchema.extend({
-    inviteToken: z
-      .string()
-      .min(3, { error: "Invite token is invalid" })
-      .optional(),
-  });
+  static registerUserSchema = this.createUserSchema
+    .extend({
+      email: z
+        .email({ error: "Email must be valid" })
+        .trim()
+        .toLowerCase()
+        .optional(),
+
+      inviteToken: z
+        .string()
+        .min(3, { error: "Invite token is invalid" })
+        .optional(),
+    })
+    .superRefine((data, ctx) => {
+      if (!data.inviteToken && !data.email) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["email"],
+          message: "Email is required when no invite token is provided",
+        });
+      }
+    });
 
   static verifyAccountQuerySchema = z.object({
     token: z

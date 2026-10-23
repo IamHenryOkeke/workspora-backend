@@ -89,10 +89,9 @@ export class UserService {
   ) {
     const { page, limit } = queryParams;
     const { id, email } = user;
-
+    console.log(id, email);
     const where: Prisma.InvitationWhereInput = {
-      userId: id,
-      email,
+      OR: [{ userId: id }, { email }],
     };
 
     const { invitations, total } = await this.userRepo.getInvitations({

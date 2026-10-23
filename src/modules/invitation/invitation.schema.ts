@@ -22,7 +22,7 @@ export class InvitationSchema {
     });
 
   static createInvitationSchema = z.object({
-    email: z.email({ error: "Invalid email address" }),
+    email: z.email({ error: "Invalid email address" }).toLowerCase(),
     role: z.enum(["ADMIN", "MEMBER"], {
       error: "Please enter a valid role value",
     }),

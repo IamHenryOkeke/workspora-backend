@@ -16,7 +16,7 @@ const authController = new AuthController(authService);
 
 authRouter.post(
   "/register",
-  rateLimiter(5),
+  // rateLimiter(5),
   validate({
     body: AuthSchema.registerUserSchema,
   }),
