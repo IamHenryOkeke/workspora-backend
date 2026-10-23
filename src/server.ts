@@ -1,11 +1,13 @@
 import app from "./app";
 import { getEnv } from "./config/env";
+import { registerInvitationExpirationJob } from "./jobs/expire-invitations.job";
 import { redis } from "./lib/redis";
 
 const PORT = getEnv("PORT") || 3000;
 
 const startServer = async () => {
   try {
+    registerInvitationExpirationJob();
     await redis.connect();
 
     app.listen(PORT, () => {
