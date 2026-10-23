@@ -30,6 +30,7 @@ const projectMemberSelect = {
     select: {
       id: true,
       role: true,
+      organizationId: true,
       user: {
         select: {
           id: true,
@@ -87,7 +88,10 @@ export class ProjectMemberRepository {
     tx: PrismaTransactionClient = prisma,
   ) {
     return await tx.projectMember.findUnique({
-      where: { projectId_memberId: { projectId, memberId } },
+      where: {
+        id: memberId,
+        projectId,
+      },
     });
   }
 
@@ -112,7 +116,7 @@ export class ProjectMemberRepository {
     tx: PrismaTransactionClient = prisma,
   ) {
     return await tx.projectMember.updateMany({
-      where: { projectId, memberId, deletedAt: null },
+      where: { projectId, id: memberId, deletedAt: null },
       data: { deletedAt: new Date() },
     });
   }

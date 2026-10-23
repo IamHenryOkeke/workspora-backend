@@ -6,6 +6,7 @@ import { MemberController } from "../modules/member/member.controller";
 import { validate } from "../middleware/validation.middleware";
 import { MemberSchema } from "../modules/member/member.schema";
 import { OrganizationRepository } from "../modules/organization/organization.repository";
+import { OrganizationSchema } from "../modules/organization/organization.schema";
 
 const memberRouter = Router({ mergeParams: true });
 
@@ -20,6 +21,7 @@ memberRouter.get(
   "/",
   validate({
     query: MemberSchema.querySchema,
+    params: OrganizationSchema.organizationParamSchema,
   }),
   memberController.getMembers,
 );

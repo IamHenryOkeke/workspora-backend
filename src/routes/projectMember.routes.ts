@@ -7,6 +7,7 @@ import { ProjectMemberService } from "../modules/projectMember/projectMember.ser
 import { ProjectMemberSchema } from "../modules/projectMember/projectMember.schema";
 import { ProjectRepository } from "../modules/project/project.repository";
 import { OrganizationRepository } from "../modules/organization/organization.repository";
+import { ProjectSchema } from "../modules/project/project.schema";
 
 const projectMemberRouter = Router({ mergeParams: true });
 
@@ -27,7 +28,7 @@ projectMemberRouter.use(isAuthenticated);
 projectMemberRouter.get(
   "/",
   validate({
-    params: ProjectMemberSchema.projectParamSchema,
+    params: ProjectSchema.projectParamSchema,
   }),
   projectMemberController.getProjectMembers,
 );
@@ -36,7 +37,7 @@ projectMemberRouter.post(
   "/",
   validate({
     body: ProjectMemberSchema.createProjectMemberSchema,
-    params: ProjectMemberSchema.projectParamSchema,
+    params: ProjectSchema.projectParamSchema,
   }),
   projectMemberController.createProjectMember,
 );

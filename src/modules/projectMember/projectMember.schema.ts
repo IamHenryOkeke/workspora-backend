@@ -1,14 +1,11 @@
 import z from "zod";
 import { CommonSchema } from "../../common/common.schema";
+import { ProjectSchema } from "../project/project.schema";
 
 export class ProjectMemberSchema {
   static querySchema = CommonSchema.paginationQuerySchema;
-  static projectParamSchema = z.object({
-    projectId: z.cuid({ error: "Invalid project ID" }),
-  });
 
-  static projectMemberParamSchema = z.object({
-    projectId: z.cuid({ error: "Invalid project ID" }),
+  static projectMemberParamSchema = ProjectSchema.projectParamSchema.extend({
     memberId: z.cuid({ error: "Invalid member ID" }),
   });
 

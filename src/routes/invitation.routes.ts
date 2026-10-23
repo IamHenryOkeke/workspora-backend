@@ -70,4 +70,12 @@ invitationRouter.post(
   invitationController.acceptInvitation,
 );
 
+invitationRouter.post(
+  "/:invitationId/decline",
+  validate({
+    params: InvitationSchema.invitationParamSchema,
+  }),
+  invitationController.declineInvitation,
+);
+
 export default invitationRouter;

@@ -1,5 +1,6 @@
 import z from "zod";
 import { CommonSchema } from "../../common/common.schema";
+import { OrganizationSchema } from "../organization/organization.schema";
 
 export class MemberSchema {
   static querySchema = CommonSchema.paginationQuerySchema.extend({
@@ -22,8 +23,7 @@ export class MemberSchema {
     }),
   });
 
-  static memberParamSchema = z.object({
-    organizationId: z.cuid({ error: "Invalid organization ID" }),
+  static memberParamSchema = OrganizationSchema.organizationParamSchema.extend({
     memberId: z.cuid({ error: "Invalid member ID" }),
   });
 

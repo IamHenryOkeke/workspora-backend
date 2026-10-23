@@ -57,7 +57,7 @@ export class InvitationTokenRepository {
         organizationId: true,
         token: true,
         organization: { select: { id: true, name: true, logo: true } },
-        invitedBy: { select: { fullName: true } },
+        invitedBy: { select: { fullName: true, id: true } },
       },
     });
   }

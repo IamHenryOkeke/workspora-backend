@@ -1,6 +1,6 @@
 import { getEnv } from "../../config/env";
 import { AppError } from "../../error/error-handler";
-import { TokenType } from "../../generated/prisma/enums";
+import { InvitationStatus, TokenType } from "../../generated/prisma/enums";
 import { AuthRepository } from "./auth.repository";
 import crypto from "crypto";
 import { emailQueue } from "../../queues/email.queue";
@@ -52,8 +52,98 @@ export class AuthService {
     );
   }
 
-  async register(data: { email: string; password: string; fullName: string }) {
-    const { email, password, fullName } = data;
+  private async createSession(user: {
+    id: string;
+    fullName: string;
+    email: string;
+    avatar: string | null;
+  }) {
+    const sessionUser = {
+      id: user.id,
+      fullName: user.fullName,
+      email: user.email,
+      avatar: user.avatar,
+    };
+
+    const accessToken = signJWT(
+      sessionUser,
+      "access",
+      TOKEN_EXPIRY.ACCESS_TOKEN,
+    );
+    const refreshToken = signJWT(
+      sessionUser,
+      "refresh",
+      TOKEN_EXPIRY.REFRESH_TOKEN,
+    );
+
+    await prisma.$transaction(async (tx) => {
+      await this.authRepo.deleteTokens(user.id, TokenType.REFRESH, tx);
+
+      await this.authRepo.createToken(
+        {
+          tokenHash: hashToken(refreshToken),
+          expiresAt: new Date(Date.now() + TOKEN_EXPIRY.REFRESH_TOKEN * 1000),
+          user: { connect: { id: user.id } },
+          type: TokenType.REFRESH,
+        },
+        tx,
+      );
+    });
+
+    return { user: sessionUser, accessToken, refreshToken };
+  }
+
+  async register(data: {
+    email: string;
+    password: string;
+    fullName: string;
+    inviteToken?: string;
+  }) {
+    const { email, password, fullName, inviteToken } = data;
+
+    if (inviteToken) {
+      const invitation = await prisma.invitation.findUnique({
+        where: { token: inviteToken },
+      });
+
+      if (!invitation) throw new AppError("Invitation is invalid.", 400);
+
+      if (invitation.status !== InvitationStatus.PENDING)
+        throw new AppError("This invitation is no longer available.", 410);
+
+      if (invitation.expiresAt < new Date())
+        throw new AppError("This invitation has expired.", 410);
+
+      const inviteEmail = invitation.email.toLowerCase();
+
+      const existingInvitee = await this.authRepo.getUserByEmail(inviteEmail);
+      if (existingInvitee)
+        throw new AppError(
+          "An account with this email already exists. Please log in to accept the invitation.",
+          409,
+        );
+
+      const hashedPassword = await hashPassword(password);
+
+      const invitedUser = await this.authRepo.createUser({
+        email: inviteEmail,
+        password: hashedPassword,
+        fullName: fullName.trim(),
+        isVerified: true,
+      });
+
+      try {
+        const session = await this.createSession(invitedUser);
+
+        return {
+          message: "Registration successful",
+          ...session,
+        };
+      } catch (error) {
+        console.error("Error creating session:", error);
+        throw new AppError("Failed to sign you in. Please try again.", 500);
+      }
+    }
 
     const existingUser = await this.authRepo.getUserByEmail(email);
     if (existingUser)

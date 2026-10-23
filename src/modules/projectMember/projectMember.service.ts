@@ -18,23 +18,12 @@ export class ProjectMemberService {
     private organizationRepo: OrganizationRepository,
   ) {}
 
-  private async getProjectOrganization(projectId: string, userId: string) {
-    const project =
-      await this.projectRepo.getProjectByIdWithoutMembershipCheck(projectId);
-    if (!project) {
-      throw new AppError("Project not found", 404);
-    }
+  private async getCallerContext(userId: string, organizationId: string) {
     const organization = await this.organizationRepo.getOrganizationById(
-      project.organizationId,
+      organizationId,
       userId,
     );
     if (!organization) throw new AppError("Project not found", 404);
-
-    return organization;
-  }
-
-  async getProjectMembers(userId: string, projectId: string) {
-    const organization = await this.getProjectOrganization(projectId, userId);
 
     const membership = await this.organizationRepo.getOrganizationMember(
       organization.id,
@@ -42,43 +31,67 @@ export class ProjectMemberService {
     );
     if (!membership) throw new AppError("Project not found.", 404);
 
-    const projectMembers =
-      await this.projectMemberRepo.getProjectMembers(projectId);
+    return { organization, membership };
+  }
 
-    return projectMembers;
+  private async getManagerContext(
+    userId: string,
+    organizationId: string,
+    action: "add members to" | "remove members from",
+  ) {
+    const context = await this.getCallerContext(userId, organizationId);
+    if (context.membership.role === "MEMBER") {
+      throw new AppError(
+        `You do not have permission to ${action} this project.`,
+        403,
+      );
+    }
+
+    return context;
+  }
+
+  private async assertOrganizationMember(
+    organizationId: string,
+    memberId: string,
+    action: "add" | "remove",
+  ) {
+    const targetMembership =
+      await this.organizationRepo.getOrganizationMemberByMemberId(
+        organizationId,
+        memberId,
+      );
+    if (!targetMembership) {
+      throw new AppError(
+        `The member you are trying to ${action} is not part of the organization.`,
+        400,
+      );
+    }
+  }
+
+  async getProjectMembers(
+    userId: string,
+    projectId: string,
+    organizationId: string,
+  ) {
+    await this.getCallerContext(userId, organizationId);
+
+    return await this.projectMemberRepo.getProjectMembers(projectId);
   }
 
   async createProjectMember(
     userId: string,
     projectId: string,
+    organizationId: string,
     data: z.infer<typeof ProjectMemberSchema.createProjectMemberSchema>,
   ) {
-    const organization = await this.getProjectOrganization(projectId, userId);
+    const { organization } = await this.getManagerContext(
+      userId,
+      organizationId,
+      "add members to",
+    );
     const { memberId } = data;
 
-    const callerMembership = await this.organizationRepo.getOrganizationMember(
-      organization.id,
-      userId,
-    );
-    if (!callerMembership) throw new AppError("Project not found.", 404);
-    if (callerMembership.role === "MEMBER") {
-      throw new AppError(
-        "You do not have permission to add members to this project.",
-        403,
-      );
-    }
-
-    const targetMembership =
-      await this.organizationRepo.getOrganizationMemberByMemberId(
-        organization.id,
-        memberId,
-      );
-    if (!targetMembership) {
-      throw new AppError(
-        "The member you are trying to add is not part of the organization.",
-        400,
-      );
-    }
+    await this.assertOrganizationMember(organization.id, memberId, "add");
 
     const existing = await this.projectMemberRepo.getProjectMember(
       projectId,
@@ -129,38 +142,18 @@ export class ProjectMemberService {
   async removeProjectMember(
     userId: string,
     projectId: string,
+    organizationId: string,
     memberId: string,
   ) {
-    const organization = await this.getProjectOrganization(projectId, userId);
-
-    const callerMembership = await this.organizationRepo.getOrganizationMember(
-      organization.id,
-      userId,
-    );
-    if (!callerMembership) throw new AppError("Project not found.", 404);
-    if (callerMembership.role === "MEMBER") {
-      throw new AppError(
-        "You do not have permission to remove members from this project.",
-        403,
-      );
-    }
-
-    const targetMembership =
-      await this.organizationRepo.getOrganizationMemberByMemberId(
-        organization.id,
-        memberId,
-      );
-    if (!targetMembership) {
-      throw new AppError(
-        "The member you are trying to remove is not part of the organization.",
-        400,
-      );
-    }
+    await this.getManagerContext(userId, organizationId, "remove members from");
 
     const existing = await this.projectMemberRepo.getProjectMember(
       projectId,
       memberId,
     );
+
+    console.log(existing);
+
     if (!existing || existing.deletedAt !== null) {
       throw new AppError("The member is not part of the project.", 400);
     }

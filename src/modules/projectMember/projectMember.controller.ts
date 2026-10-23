@@ -9,11 +9,12 @@ export class ProjectMemberController {
   getProjectMembers = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = req.user as User;
-      const { projectId } = req.params;
+      const { projectId, organizationId } = req.params;
 
       const projectMembers = await this.projectMemberService.getProjectMembers(
         user.id,
         projectId as string,
+        organizationId as string,
       );
 
       res.status(200).json({
@@ -28,10 +29,11 @@ export class ProjectMemberController {
   createProjectMember = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = req.user as User;
-      const { projectId } = req.params;
+      const { projectId, organizationId } = req.params;
       const projectMember = await this.projectMemberService.createProjectMember(
         user.id,
         projectId as string,
+        organizationId as string,
         req.body,
       );
 
@@ -47,11 +49,12 @@ export class ProjectMemberController {
   removeProjectMember = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = req.user as User;
-      const { projectId, memberId } = req.params;
+      const { projectId, organizationId, memberId } = req.params;
 
       await this.projectMemberService.removeProjectMember(
         user.id,
         projectId as string,
+        organizationId as string,
         memberId as string,
       );
 

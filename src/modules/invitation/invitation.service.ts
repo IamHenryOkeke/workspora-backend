@@ -41,6 +41,27 @@ export class InvitationService {
     }
   }
 
+  private async checkInvitationValidity(
+    invitationId: string,
+    organizationId: string,
+    email: string,
+  ) {
+    const invitation = await this.invitationRepo.getInvitationById(
+      invitationId,
+      organizationId,
+    );
+
+    if (!invitation || invitation.email !== email) {
+      throw new AppError("Invitation not found.", 404);
+    }
+
+    if (invitation.status !== InvitationStatus.PENDING) {
+      throw new AppError("Only pending invitations can be decline.", 400);
+    }
+
+    return invitation;
+  }
+
   private async sendInvitationEmail(
     invitation: {
       email: string;
@@ -52,7 +73,7 @@ export class InvitationService {
     },
     rawToken: string,
   ) {
-    const invitationLink = `${FRONTEND_URL}/invitations/accept?token=${rawToken}`;
+    const invitationLink = `${FRONTEND_URL}/invitation?token=${rawToken}`;
     await emailQueue
       .add(
         "send-invitation-email",
@@ -274,22 +295,12 @@ export class InvitationService {
     invitationId: string,
   ) {
     const { id: userId, email } = user;
-    const invitation = await this.invitationRepo.getInvitationById(
+
+    const invitation = await this.checkInvitationValidity(
       invitationId,
       organizationId,
+      email,
     );
-
-    if (!invitation) {
-      throw new AppError("Invitation not found.", 404);
-    }
-
-    if (invitation.status !== InvitationStatus.PENDING) {
-      throw new AppError("Only pending invitations can be accepted.", 400);
-    }
-
-    if (invitation.email !== email) {
-      throw new AppError("This invite isn't yours", 403);
-    }
 
     const role =
       invitation.role === MemberRole.OWNER ? MemberRole.ADMIN : invitation.role;
@@ -349,6 +360,20 @@ export class InvitationService {
           tx,
         );
       }
+    });
+  }
+
+  async declineInvitation(
+    user: User,
+    organizationId: string,
+    invitationId: string,
+  ) {
+    const { email } = user;
+
+    await this.checkInvitationValidity(invitationId, organizationId, email);
+
+    await this.invitationRepo.updateInvitation(invitationId, {
+      status: InvitationStatus.DECLINED,
     });
   }
 }

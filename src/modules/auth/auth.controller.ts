@@ -11,6 +11,20 @@ export class AuthController {
     async (req: Request, res: Response): Promise<void> => {
       const result = await this.authService.register(req.body);
 
+      if ("refreshToken" in result) {
+        const { refreshToken, ...payload } = result;
+
+        res.cookie("refreshToken", refreshToken, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: "strict",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+        });
+
+        res.status(201).json(payload);
+        return;
+      }
+
       res.status(201).json(result);
     },
   );

@@ -118,4 +118,21 @@ export class InvitationController {
       });
     },
   );
+
+  declineInvitation = asyncHandler(
+    async (req: Request, res: Response): Promise<void> => {
+      const user = req.user as User;
+      const { organizationId, invitationId } = req.params;
+
+      await this.invitationService.declineInvitation(
+        user,
+        organizationId as string,
+        invitationId as string,
+      );
+
+      res.status(200).json({
+        message: "Invitation declined successfully",
+      });
+    },
+  );
 }

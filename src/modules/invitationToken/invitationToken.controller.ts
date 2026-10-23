@@ -9,8 +9,14 @@ export class InvitationTokenController {
   previewInvitation = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const { token } = req.params;
+      const user = req.user as User;
+
+      console.log(user);
       const invitationDetails =
-        await this.invitationTokenService.previewInvitation(token as string);
+        await this.invitationTokenService.previewInvitation(
+          token as string,
+          user,
+        );
 
       res.status(200).json({
         message: "Invitation preview fetched successfully",

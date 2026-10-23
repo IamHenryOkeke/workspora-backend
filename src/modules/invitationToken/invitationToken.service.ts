@@ -6,6 +6,17 @@ import { InvitationStatus, MemberStatus } from "../../generated/prisma/enums";
 import { User } from "../../generated/prisma/client";
 import { prisma } from "../../lib/prisma";
 
+export const maskEmail = (email: string): string => {
+  const normalized = email.trim().toLowerCase();
+  const at = normalized.lastIndexOf("@"); // last one, in case the local part is quoted
+  if (at < 1) return "***"; // not a valid address, reveal nothing
+
+  const local = normalized.slice(0, at);
+  const domain = normalized.slice(at + 1);
+
+  const visible = local.length >= 3 ? local[0] : "";
+  return `${visible}***@${domain}`;
+};
 export class InvitationTokenService {
   constructor(
     private invitationTokenRepo: InvitationTokenRepository,
@@ -31,15 +42,17 @@ export class InvitationTokenService {
     return invitation;
   }
 
-  async previewInvitation(token: string) {
+  async previewInvitation(token: string, user: User) {
     const invitation = await this.checkInvitationTokenValidity(token);
 
     return {
-      organizationName: invitation.organization.name,
-      organizationLogo: invitation.organization.logo,
-      inviterName: invitation.invitedBy.fullName,
+      organization: invitation.organization,
+      invitedBy: invitation.invitedBy,
       role: invitation.role,
-      email: invitation.email,
+      maskedEmail: maskEmail(invitation.email),
+      status: invitation.status,
+      ...(user && { isInvitee: invitation.invitedBy.id !== user.id }),
+      expiresAt: invitation.expiresAt,
     };
   }
 

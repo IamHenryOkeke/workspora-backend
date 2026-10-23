@@ -6,8 +6,11 @@ import { InvitationTokenService } from "../modules/invitationToken/invitationTok
 import { InvitationTokenController } from "../modules/invitationToken/invitationToken.controller";
 import { InvitationTokenSchema } from "../modules/invitationToken/invitationToken.schema";
 import { InvitationTokenRepository } from "../modules/invitationToken/invitationToken.repository";
+import { optionalAuth } from "../middleware/optionalAuth.middleware";
 
 const invitationTokenRouter = Router();
+
+invitationTokenRouter.use(optionalAuth);
 
 const invitationTokenRepo = new InvitationTokenRepository();
 const memberRepo = new MemberRepository();
@@ -22,7 +25,7 @@ const invitationTokenController = new InvitationTokenController(
 invitationTokenRouter.get(
   "/:token",
   validate({
-    query: InvitationTokenSchema.invitationTokenParamSchema,
+    params: InvitationTokenSchema.invitationTokenParamSchema,
   }),
   invitationTokenController.previewInvitation,
 );
@@ -32,7 +35,7 @@ invitationTokenRouter.use(isAuthenticated);
 invitationTokenRouter.post(
   "/:token/accept",
   validate({
-    query: InvitationTokenSchema.invitationTokenParamSchema,
+    params: InvitationTokenSchema.invitationTokenParamSchema,
   }),
   invitationTokenController.acceptInvitation,
 );
@@ -40,7 +43,7 @@ invitationTokenRouter.post(
 invitationTokenRouter.post(
   "/:token/decline",
   validate({
-    query: InvitationTokenSchema.invitationTokenParamSchema,
+    params: InvitationTokenSchema.invitationTokenParamSchema,
   }),
   invitationTokenController.declineInvitation,
 );

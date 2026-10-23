@@ -6,8 +6,9 @@ import { ProjectController } from "../modules/project/project.controller";
 import { validate } from "../middleware/validation.middleware";
 import { ProjectSchema } from "../modules/project/project.schema";
 import { OrganizationRepository } from "../modules/organization/organization.repository";
+import { OrganizationSchema } from "../modules/organization/organization.schema";
 
-const projectRouter = Router();
+const projectRouter = Router({ mergeParams: true });
 
 const projectRepo = new ProjectRepository();
 const organizationRepo = new OrganizationRepository();
@@ -20,6 +21,7 @@ projectRouter.get(
   "/",
   validate({
     query: ProjectSchema.querySchema,
+    params: OrganizationSchema.organizationParamSchema,
   }),
   projectController.getProjects,
 );
@@ -28,7 +30,6 @@ projectRouter.get(
   "/:projectId",
   validate({
     params: ProjectSchema.projectParamSchema,
-    query: ProjectSchema.querySchema,
   }),
   projectController.getProjectById,
 );
@@ -37,6 +38,7 @@ projectRouter.post(
   "/",
   validate({
     body: ProjectSchema.createProjectSchema,
+    params: OrganizationSchema.organizationParamSchema,
   }),
   projectController.createProject,
 );
@@ -54,7 +56,6 @@ projectRouter.delete(
   "/:projectId",
   validate({
     params: ProjectSchema.projectParamSchema,
-    query: ProjectSchema.querySchema,
   }),
   projectController.deleteProject,
 );

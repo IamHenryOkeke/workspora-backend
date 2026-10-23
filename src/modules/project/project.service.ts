@@ -28,9 +28,10 @@ export class ProjectService {
 
   async getProjects(
     userId: string,
+    organizationId: string,
     query: z.infer<typeof ProjectSchema.querySchema>,
   ) {
-    const { status, searchTerm, page, limit, organizationId } = query;
+    const { status, searchTerm, page, limit } = query;
 
     const member = await this.assertMembership(userId, organizationId);
     const skip = (page - 1) * limit;
@@ -94,9 +95,10 @@ export class ProjectService {
 
   async createProject(
     userId: string,
+    organizationId: string,
     data: z.infer<typeof ProjectSchema.createProjectSchema>,
   ) {
-    const member = await this.assertMembership(userId, data.organizationId);
+    const member = await this.assertMembership(userId, organizationId);
 
     if (member.role === "MEMBER") {
       throw new AppError(
@@ -108,7 +110,7 @@ export class ProjectService {
     const projectData: Prisma.ProjectCreateInput = {
       name: data.name,
       description: data.description,
-      organization: { connect: { id: data.organizationId } },
+      organization: { connect: { id: organizationId } },
       creator: { connect: { id: userId } },
       projectMembers: {
         create: {
@@ -124,10 +126,11 @@ export class ProjectService {
 
   async updateProject(
     userId: string,
+    organizationId: string,
     projectId: string,
     data: z.infer<typeof ProjectSchema.updateProjectSchema>,
   ) {
-    const { organizationId, name, description, status } = data;
+    const { name, description, status } = data;
     const member = await this.assertMembership(userId, organizationId);
 
     if (member.role === "MEMBER") {

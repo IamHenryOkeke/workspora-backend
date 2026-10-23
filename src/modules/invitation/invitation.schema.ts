@@ -1,5 +1,6 @@
 import z from "zod";
 import { CommonSchema } from "../../common/common.schema";
+import { OrganizationSchema } from "../organization/organization.schema";
 
 export class InvitationSchema {
   static querySchema = CommonSchema.paginationQuerySchema.extend({
@@ -15,10 +16,10 @@ export class InvitationSchema {
       .optional(),
   });
 
-  static invitationParamSchema = z.object({
-    organizationId: z.cuid({ error: "Invalid organization ID" }),
-    invitationId: z.cuid({ error: "Invalid invitation ID" }),
-  });
+  static invitationParamSchema =
+    OrganizationSchema.organizationParamSchema.extend({
+      invitationId: z.cuid({ error: "Invalid invitation ID" }),
+    });
 
   static createInvitationSchema = z.object({
     email: z.email({ error: "Invalid email address" }),

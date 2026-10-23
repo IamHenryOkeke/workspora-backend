@@ -18,7 +18,7 @@ authRouter.post(
   "/register",
   rateLimiter(5),
   validate({
-    body: AuthSchema.createUserSchema,
+    body: AuthSchema.registerUserSchema,
   }),
   authController.register,
 );
@@ -33,7 +33,7 @@ authRouter.get(
 
 authRouter.post(
   "/login",
-  // rateLimiter(5),
+  rateLimiter(5),
   validate({ body: AuthSchema.loginUserSchema }),
   authController.login,
 );

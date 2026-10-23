@@ -22,6 +22,13 @@ export class AuthSchema {
       }),
   });
 
+  static registerUserSchema = this.createUserSchema.extend({
+    inviteToken: z
+      .string()
+      .min(3, { error: "Invite token is invalid" })
+      .optional(),
+  });
+
   static verifyAccountQuerySchema = z.object({
     token: z
       .string({ error: "Token is required" })

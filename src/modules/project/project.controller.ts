@@ -9,9 +9,11 @@ export class ProjectController {
   getProjects = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = req.user as User;
+      const { organizationId } = req.params;
 
       const { projects, pagination } = await this.projectService.getProjects(
         user.id,
+        organizationId as string,
         req.validatedQuery,
       );
 
@@ -28,8 +30,7 @@ export class ProjectController {
   getProjectById = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = req.user as User;
-      const { projectId } = req.params;
-      const { organizationId } = req.validatedQuery;
+      const { projectId, organizationId } = req.params;
 
       const project = await this.projectService.getProjectById(
         user.id,
@@ -49,9 +50,11 @@ export class ProjectController {
   createProject = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = req.user as User;
+      const { organizationId } = req.params;
 
       const project = await this.projectService.createProject(
         user.id,
+        organizationId as string,
         req.body,
       );
 
@@ -67,11 +70,12 @@ export class ProjectController {
   updateProject = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = req.user as User;
-      const { projectId } = req.params as { projectId: string };
+      const { projectId, organizationId } = req.params;
 
       const project = await this.projectService.updateProject(
         user.id,
-        projectId,
+        organizationId as string,
+        projectId as string,
         req.body,
       );
 
@@ -87,15 +91,12 @@ export class ProjectController {
   deleteProject = asyncHandler(
     async (req: Request, res: Response): Promise<void> => {
       const user = req.user as User;
-      const { projectId } = req.params as { projectId: string };
-      const { organizationId } = req.validatedQuery as {
-        organizationId: string;
-      };
+      const { projectId, organizationId } = req.params;
 
       await this.projectService.deleteProject(
         user.id,
-        projectId,
-        organizationId,
+        projectId as string,
+        organizationId as string,
       );
 
       res.status(200).json({
