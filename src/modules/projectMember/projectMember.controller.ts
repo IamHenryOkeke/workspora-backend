@@ -30,6 +30,7 @@ export class ProjectMemberController {
     async (req: Request, res: Response): Promise<void> => {
       const user = req.user as User;
       const { projectId, organizationId } = req.params;
+
       const projectMember = await this.projectMemberService.createProjectMember(
         user.id,
         projectId as string,
@@ -38,7 +39,7 @@ export class ProjectMemberController {
       );
 
       res.status(201).json({
-        message: "Project member created successfully",
+        message: "Project member(s) created successfully",
         data: {
           projectMember,
         },

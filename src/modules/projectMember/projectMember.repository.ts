@@ -15,7 +15,6 @@ export type PrismaTransactionClient = Omit<
 const projectMemberSelect = {
   id: true,
   projectId: true,
-  createdAt: true,
   project: {
     select: {
       name: true,
@@ -91,6 +90,37 @@ export class ProjectMemberRepository {
       where: {
         id: memberId,
         projectId,
+      },
+      select: {
+        id: true,
+        projectId: true,
+        deletedAt: true,
+        project: {
+          select: {
+            name: true,
+            organization: {
+              select: {
+                name: true,
+                slug: true,
+              },
+            },
+          },
+        },
+        member: {
+          select: {
+            id: true,
+            role: true,
+            organizationId: true,
+            user: {
+              select: {
+                id: true,
+                email: true,
+                fullName: true,
+                avatar: true,
+              },
+            },
+          },
+        },
       },
     });
   }

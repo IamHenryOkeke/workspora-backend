@@ -6,8 +6,12 @@ import { AppError } from "../../error/error-handler";
 import { OrganizationRepository } from "../organization/organization.repository";
 import { emailQueue } from "../../queues/email.queue";
 import { queueConfig } from "../../utils/queue-config";
-import { addedToProjectEmail } from "../../email-templates";
+import {
+  addedToProjectEmail,
+  removedFromProjectEmail,
+} from "../../email-templates";
 import { getEnv } from "../../config/env";
+import { prisma } from "../../lib/prisma";
 
 const FRONTEND_URL = getEnv("FRONTEND_URL");
 
@@ -24,7 +28,6 @@ export class ProjectMemberService {
       userId,
     );
     if (!organization) throw new AppError("Project not found", 404);
-
     const membership = await this.organizationRepo.getOrganizationMember(
       organization.id,
       userId,
@@ -89,54 +92,122 @@ export class ProjectMemberService {
       organizationId,
       "add members to",
     );
-    const { memberId } = data;
 
-    await this.assertOrganizationMember(organization.id, memberId, "add");
+    // Remove duplicate IDs from the request.
+    const memberIds = [...new Set(data.memberIds)];
 
-    const existing = await this.projectMemberRepo.getProjectMember(
-      projectId,
-      memberId,
-    );
-    if (existing && existing.deletedAt === null) {
-      throw new AppError("The member is already part of the project.", 400);
-    }
-    if (existing) {
-      return await this.projectMemberRepo.restoreProjectMember(existing.id);
+    if (memberIds.length === 0) {
+      throw new AppError("At least one member is required.", 400);
     }
 
-    const newProjectMember = await this.projectMemberRepo.createProjectMember({
-      project: { connect: { id: projectId } },
-      member: { connect: { id: memberId } },
+    // Ensure the project belongs to this organization.
+    const project = await prisma.project.findFirst({
+      where: {
+        id: projectId,
+        organizationId: organization.id,
+        deletedAt: null,
+      },
+      select: {
+        id: true,
+      },
     });
 
-    const {
-      member: {
-        user: { email, fullName },
-      },
-      project: {
-        name: projectName,
-        organization: { name: organizationName },
-      },
-    } = newProjectMember;
+    if (!project) {
+      console.log(1);
+      throw new AppError("Project not found.", 404);
+    }
 
-    const projectUrl = `${FRONTEND_URL}/dashboard/org/${organization.slug}/projects`;
-
-    await emailQueue.add(
-      "send-new-project-member-email",
-      {
-        title: "You've been added to a project",
-        to: email,
-        content: addedToProjectEmail(
-          fullName,
-          projectName,
-          organizationName,
-          projectUrl,
-        ),
-      },
-      queueConfig,
+    // Ensure every selected member belongs to the organization.
+    await Promise.all(
+      memberIds.map((memberId) =>
+        this.assertOrganizationMember(organization.id, memberId, "add"),
+      ),
     );
 
-    return newProjectMember;
+    // Reject the request if any member is already active.
+    const existingMemberships = await Promise.all(
+      memberIds.map((memberId) =>
+        this.projectMemberRepo.getProjectMember(projectId, memberId),
+      ),
+    );
+
+    const alreadyAdded = existingMemberships.find(
+      (membership) => membership?.deletedAt === null,
+    );
+
+    if (alreadyAdded) {
+      throw new AppError(
+        "One or more members are already part of the project.",
+        400,
+      );
+    }
+
+    // Create missing memberships and restore soft-deleted ones.
+    const projectMembers = await prisma.$transaction(
+      memberIds.map((memberId) =>
+        prisma.projectMember.upsert({
+          where: {
+            projectId_memberId: {
+              projectId,
+              memberId,
+            },
+          },
+          update: {
+            deletedAt: null,
+          },
+          create: {
+            projectId,
+            memberId,
+          },
+          include: {
+            member: {
+              include: {
+                user: true,
+              },
+            },
+            project: {
+              include: {
+                organization: true,
+              },
+            },
+          },
+        }),
+      ),
+    );
+
+    // Notify each member after the transaction succeeds.
+    await Promise.all(
+      projectMembers.map((projectMember) => {
+        const {
+          member: {
+            user: { email, fullName },
+          },
+          project: {
+            name: projectName,
+            organization: { name: organizationName, slug },
+          },
+        } = projectMember;
+
+        const projectUrl = `${FRONTEND_URL}/dashboard/org/${slug}/projects`;
+
+        return emailQueue.add(
+          "send-new-project-member-email",
+          {
+            title: "You've been added to a project",
+            to: email,
+            content: addedToProjectEmail(
+              fullName,
+              projectName,
+              organizationName,
+              projectUrl,
+            ),
+          },
+          queueConfig,
+        );
+      }),
+    );
+
+    return projectMembers;
   }
 
   async removeProjectMember(
@@ -152,15 +223,31 @@ export class ProjectMemberService {
       memberId,
     );
 
-    console.log(existing);
-
     if (!existing || existing.deletedAt !== null) {
       throw new AppError("The member is not part of the project.", 400);
     }
 
-    return await this.projectMemberRepo.removeProjectMember(
-      projectId,
-      memberId,
+    await this.projectMemberRepo.removeProjectMember(projectId, memberId);
+
+    const { project, member } = existing;
+
+    const projectUrl = `${FRONTEND_URL}/dashboard/org/${project.organization.slug}/projects`;
+
+    await emailQueue.add(
+      "send-project-member-removed-email",
+      {
+        title: `Removed from ${project.name}`,
+        to: member.user.email,
+        content: removedFromProjectEmail(
+          member.user.fullName,
+          project.name,
+          project.organization.name,
+          projectUrl,
+        ),
+      },
+      queueConfig,
     );
+
+    return true;
   }
 }

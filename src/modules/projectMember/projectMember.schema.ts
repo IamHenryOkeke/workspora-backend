@@ -10,6 +10,6 @@ export class ProjectMemberSchema {
   });
 
   static createProjectMemberSchema = z.object({
-    memberId: z.cuid({ error: "Invalid member ID" }),
+    memberIds: z.array(z.string()).min(1, "Select at least one member"),
   });
 }

@@ -94,6 +94,7 @@ export class ProjectRepository {
         id: true,
         name: true,
         description: true,
+        organizationId: true,
         status: true,
         createdAt: true,
         updatedAt: true,

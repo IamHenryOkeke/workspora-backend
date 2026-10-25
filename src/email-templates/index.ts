@@ -161,3 +161,36 @@ export const addedToProjectEmail = (
 
   return emailTemplate(title, content);
 };
+
+export const removedFromProjectEmail = (
+  fullName: string,
+  projectName: string,
+  organizationName: string,
+  projectUrl: string,
+) => {
+  const title = `Removed from ${projectName}`;
+
+  const content = `
+    <p>Hi ${fullName},</p>
+
+    <p>You have been removed from the <strong>${projectName}</strong> project in <strong>${organizationName}</strong> on Workspora.</p>
+
+    <p>You will no longer have access to this project's resources or be able to collaborate with its members through the project.</p>
+
+    <p>If you believe this was a mistake or need more information, please contact your organization administrator.</p>
+
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${projectUrl}" target="_blank" rel="noopener noreferrer"
+        style="background-color: ${ACCENT}; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold;">
+        View Organization
+      </a>
+    </div>
+
+    <div style="display: grid; margin-top: 30px;">
+      <span style="margin-top: 8px;">Warm regards,</span>
+      <span style="margin-top: 8px;">Workspora Team</span>
+    </div>
+  `;
+
+  return emailTemplate(title, content);
+};
