@@ -84,8 +84,8 @@ jobs:
           REDIS_URL=${{ secrets.REDIS_URL }}
           EOF
 
-      # - name: Run database migrations
-      #   run: yarn deploy:migrate
+      - name: Run database migrations
+        run: yarn deploy:migrate
         
       # - name: Restart app
       #   run: pm2 reload workspora-api workspora-email-worker --update-env
