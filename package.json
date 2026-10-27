@@ -5,13 +5,14 @@
   "main": "index.js",
   "scripts": {
     "dev": "ts-node-dev --respawn --transpile-only src/server.ts",
-    "worker:dev": "ts-node-dev --respawn --transpile-only src/workers/email.worker.ts",
-    "dev:all": "concurrently \"npm run dev\" \"npm run worker:dev\"",
-    "build": "tsc",
-    "start": "node dist/server.js",
-    "lint": "eslint .",
-    "format": "prettier --write .",
-    "prepare": "husky"
+    "worker:email": "ts-node src/workers/email.worker.ts",
+    "dev:all": "concurrently \"npm run dev\" \"npm run worker:email\"",
+    "build": "prisma generate && tsc",
+    "deploy:migrate": "prisma migrate deploy",
+    "start": "prisma migrate deploy && node dist/server.js",
+    "worker:email:prod": "node dist/workers/email.worker.js",
+    "start:prod": "npm run deploy:migrate && concurrently \"npm run start\" \"npm run worker:email:prod\"",
+    "prepare": "husky install || true"
   },
   "lint-staged": {
     "**/*.ts": [
