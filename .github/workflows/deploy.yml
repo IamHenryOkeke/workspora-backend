@@ -68,18 +68,18 @@ jobs:
         run: |
           cat > .env <<'EOF'
           DATABASE_URL=${{ secrets.DATABASE_URL }}
-          NODE_ENV=production
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
           PORT=${{ secrets.PORT }}
+          CORS_WHITELIST=${{ secrets.CORS_WHITELIST }}
+          ACCESS_TOKEN_SECRET=${{ secrets.ACCESS_TOKEN_SECRET }}
+          REFRESH_TOKEN_SECRET=${{ secrets.REFRESH_TOKEN_SECRET }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASS=${{ secrets.SMTP_PASS }}
           CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
           CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
           CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
-          SMTP_USER=${{ secrets.SMTP_USER }}
-          SMTP_PASS=${{ secrets.SMTP_PASS }}
           GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
           GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-          CORS_WHITELIST=${{ secrets.CORS_WHITELIST }}
-          PAYSTACK_SECRET_KEY=${{ secrets.PAYSTACK_SECRET_KEY }}
+          GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}
           FRONTEND_URL=${{ secrets.FRONTEND_URL }}
           REDIS_URL=${{ secrets.REDIS_URL }}
           EOF
