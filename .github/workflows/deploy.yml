@@ -1,0 +1,86 @@
+name: Deploy Workspora to Self-Hosted Runner
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Build app
+    runs-on: self-hosted
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      PORT: ${{ secrets.PORT }}
+      CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+      CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+      CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+      SMTP_USER: ${{ secrets.SMTP_USER }}
+      SMTP_PASS: ${{ secrets.SMTP_PASS }}
+      GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+      GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+      CORS_WHITELIST: ${{ secrets.CORS_WHITELIST }}
+      PAYSTACK_SECRET_KEY: ${{ secrets.PAYSTACK_SECRET_KEY }}
+      FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+      REDIS_URL: ${{ secrets.REDIS_URL }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Use Node.js
+        uses: actions/setup-node@v4
+        with:
+          # node version of >=22.0.0
+          node-version: '22.x'
+          cache: 'yarn'
+      
+      - name: Install dependencies
+        run: yarn install --frozen-lockfile
+      
+      - name: Build app
+        run: yarn run build
+      
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-package
+          path: |
+            dist/
+            package.json
+            yarn.lock
+            ecosystem.config.js
+          retention-days: 1
+
+  deploy:
+    runs-on: self-hosted
+    needs: build
+    steps:
+      - name: Download build artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: deployment-package
+      
+      - name: Install production dependencies
+        run: yarn install --frozen-lockfile --production
+      
+      - name: Create .env file
+        run: |
+          cat > .env <<'EOF'
+          DATABASE_URL=${{ secrets.DATABASE_URL }}
+          NODE_ENV=production
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          PORT=${{ secrets.PORT }}
+          CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
+          SMTP_USER=${{ secrets.SMTP_USER }}
+          SMTP_PASS=${{ secrets.SMTP_PASS }}
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          CORS_WHITELIST=${{ secrets.CORS_WHITELIST }}
+          PAYSTACK_SECRET_KEY=${{ secrets.PAYSTACK_SECRET_KEY }}
+          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
+          REDIS_URL=${{ secrets.REDIS_URL }}
+          EOF
+      - name: Restart app
+        run: pm2 reload workspora-api workspora-email-worker --update-env
