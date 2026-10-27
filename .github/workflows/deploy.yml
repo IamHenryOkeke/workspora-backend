@@ -1,4 +1,4 @@
-name: Deploy Workspora to Self-Hosted Runner
+name: Deploy Workspora API to Self-Hosted Runner
 on:
   push:
     branches:
