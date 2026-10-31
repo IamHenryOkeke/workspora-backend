@@ -1,4 +1,6 @@
+
 name: Deploy Workspora API to Self-Hosted Runner
+
 on:
   push:
     branches:
@@ -8,6 +10,7 @@ jobs:
   build:
     name: Build app
     runs-on: self-hosted
+
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       PORT: ${{ secrets.PORT }}
@@ -24,68 +27,132 @@ jobs:
       GOOGLE_CALLBACK_URL: ${{ secrets.GOOGLE_CALLBACK_URL }}
       FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
       REDIS_URL: ${{ secrets.REDIS_URL }}
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          # node version of >=22.0.0
           node-version: '22.x'
           cache: 'yarn'
-      
+
       - name: Install dependencies
         run: yarn install --frozen-lockfile
-      
+
       - name: Build app
         run: yarn run build
-      
+
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
           name: deployment-package
           path: |
             dist/
+            prisma/
+            prisma.config.ts
             package.json
             yarn.lock
             ecosystem.config.js
           retention-days: 1
 
   deploy:
+    name: Deploy app
     runs-on: self-hosted
     needs: build
+
     steps:
       - name: Download build artifact
         uses: actions/download-artifact@v4
         with:
           name: deployment-package
-      
+
       - name: Install production dependencies
         run: yarn install --frozen-lockfile --production
-      
+
       - name: Create .env file
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          PORT: ${{ secrets.PORT }}
+          CORS_WHITELIST: ${{ secrets.CORS_WHITELIST }}
+          ACCESS_TOKEN_SECRET: ${{ secrets.ACCESS_TOKEN_SECRET }}
+          REFRESH_TOKEN_SECRET: ${{ secrets.REFRESH_TOKEN_SECRET }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_API_KEY: ${{ secrets.CLOUDINARY_API_KEY }}
+          CLOUDINARY_API_SECRET: ${{ secrets.CLOUDINARY_API_SECRET }}
+          GOOGLE_CLIENT_ID: ${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET: ${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_CALLBACK_URL: ${{ secrets.GOOGLE_CALLBACK_URL }}
+          FRONTEND_URL: ${{ secrets.FRONTEND_URL }}
+          REDIS_URL: ${{ secrets.REDIS_URL }}
         run: |
-          cat > .env <<'EOF'
-          DATABASE_URL=${{ secrets.DATABASE_URL }}
-          PORT=${{ secrets.PORT }}
-          CORS_WHITELIST=${{ secrets.CORS_WHITELIST }}
-          ACCESS_TOKEN_SECRET=${{ secrets.ACCESS_TOKEN_SECRET }}
-          REFRESH_TOKEN_SECRET=${{ secrets.REFRESH_TOKEN_SECRET }}
-          SMTP_USER=${{ secrets.SMTP_USER }}
-          SMTP_PASS=${{ secrets.SMTP_PASS }}
-          CLOUDINARY_CLOUD_NAME=${{ secrets.CLOUDINARY_CLOUD_NAME }}
-          CLOUDINARY_API_KEY=${{ secrets.CLOUDINARY_API_KEY }}
-          CLOUDINARY_API_SECRET=${{ secrets.CLOUDINARY_API_SECRET }}
-          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
-          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
-          GOOGLE_CALLBACK_URL=${{ secrets.GOOGLE_CALLBACK_URL }}
-          FRONTEND_URL=${{ secrets.FRONTEND_URL }}
-          REDIS_URL=${{ secrets.REDIS_URL }}
+          cat > .env <<EOF
+          DATABASE_URL=$DATABASE_URL
+          PORT=$PORT
+          CORS_WHITELIST=$CORS_WHITELIST
+          ACCESS_TOKEN_SECRET=$ACCESS_TOKEN_SECRET
+          REFRESH_TOKEN_SECRET=$REFRESH_TOKEN_SECRET
+          SMTP_USER=$SMTP_USER
+          SMTP_PASS=$SMTP_PASS
+          CLOUDINARY_CLOUD_NAME=$CLOUDINARY_CLOUD_NAME
+          CLOUDINARY_API_KEY=$CLOUDINARY_API_KEY
+          CLOUDINARY_API_SECRET=$CLOUDINARY_API_SECRET
+          GOOGLE_CLIENT_ID=$GOOGLE_CLIENT_ID
+          GOOGLE_CLIENT_SECRET=$GOOGLE_CLIENT_SECRET
+          GOOGLE_CALLBACK_URL=$GOOGLE_CALLBACK_URL
+          FRONTEND_URL=$FRONTEND_URL
+          REDIS_URL=$REDIS_URL
           EOF
+
+      - name: Check Neon connectivity
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          node <<'NODE'
+          const dns = require("node:dns").promises;
+          const net = require("node:net");
+
+          async function check() {
+            const url = new URL(process.env.DATABASE_URL);
+            const host = url.hostname;
+            const port = Number(url.port || 5432);
+
+            console.log("Database host:", host);
+
+            const addresses = await dns.lookup(host, { all: true });
+            console.log("Resolved addresses:", addresses);
+
+            await new Promise((resolve, reject) => {
+              const socket = net.createConnection({ host, port });
+
+              socket.setTimeout(15000);
+
+              socket.on("connect", () => {
+                console.log("Neon TCP connection successful");
+                socket.end();
+                resolve();
+              });
+
+              socket.on("timeout", () => {
+                socket.destroy();
+                reject(new Error("Connection timed out"));
+              });
+
+              socket.on("error", reject);
+            });
+          }
+
+          check().catch((error) => {
+            console.error(error.message);
+            process.exit(1);
+          });
+          NODE
 
       - name: Run database migrations
         run: yarn deploy:migrate
-        
+
       # - name: Restart app
       #   run: pm2 reload workspora-api workspora-email-worker --update-env
