@@ -9,9 +9,8 @@
     "dev:all": "concurrently \"npm run dev\" \"npm run worker:email\"",
     "build": "prisma generate && tsc",
     "deploy:migrate": "prisma migrate deploy",
-    "start": "prisma migrate deploy && node dist/server.js",
+    "start": "node dist/server.js",
     "worker:email:prod": "node dist/workers/email.worker.js",
-    "start:prod": "npm run deploy:migrate && concurrently \"npm run start\" \"npm run worker:email:prod\"",
     "prepare": "husky install || true"
   },
   "lint-staged": {
