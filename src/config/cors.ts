@@ -2,7 +2,7 @@ import { AppError } from "../error/error-handler";
 import { getEnv } from "./env";
 
 const whitelist = getEnv("CORS_WHITELIST").split(",") || [];
-console.log("CORS whitelist:", whitelist);
+
 const corsOptions = {
   origin: function (
     origin: string | undefined,
