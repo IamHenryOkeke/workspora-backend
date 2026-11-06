@@ -119,7 +119,7 @@ export class AuthController {
         sameSite: "strict",
         maxAge: 7 * 24 * 60 * 60 * 1000,
       });
-
+      // frontend will handle the redirect and store the access token in local storage or memory
       const redirectUrl = `${getEnv("FRONTEND_URL")}/auth/google/callback?${params.toString()}`;
       res.redirect(redirectUrl);
     },
