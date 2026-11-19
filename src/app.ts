@@ -5,8 +5,10 @@ import { errorMiddleware } from "./middleware/error.middleware";
 import * as routes from "./routes";
 import passport from "./config/passport-config";
 import cookieParser from "cookie-parser";
+import requestLogger from "./middleware/logger.middleware";
 
 const app = express();
+app.use(requestLogger);
 
 app.use(cors(corsOptions));
 app.use(express.json());
