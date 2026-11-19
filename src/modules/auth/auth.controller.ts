@@ -52,6 +52,7 @@ export class AuthController {
 
   logout = asyncHandler(async (req: Request, res: Response): Promise<void> => {
     const refreshToken = req.cookies.refreshToken;
+    console.log("Refresh Token from cookie:", refreshToken); // Log the refresh token for debugging
     await this.authService.logout(refreshToken);
 
     res.clearCookie("refreshToken");
