@@ -6,6 +6,10 @@ console.log(
   `Logger initialized in ${isProduction ? "production" : "development"} mode`,
 );
 
+console.log(
+  `Logger initialized in ${isProduction ? "production" : "development"} mode`,
+);
+
 const logger = pino({
   level: isProduction ? "info" : "debug",
 
