@@ -69,7 +69,7 @@ jobs:
           name: deployment-package
 
       - name: Install production dependencies
-        run: yarn install --frozen-lockfile
+        run: yarn install --frozen-lockfile --production=true
 
       - name: Create .env file
         env:
